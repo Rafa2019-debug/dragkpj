@@ -1,37 +1,988 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor Image to Text (11 Digit)</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <title>LASIK Auto Filter & Manager</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        success: { 500: '#10b981', 600: '#059669' },
+                        danger: { 500: '#ef4444', 600: '#dc2626' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- SheetJS for XLSX/XLS -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- PapaParse for CSV/TXT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
-        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; }
-        #drop-zone { border: 2px dashed #3498db; padding: 40px; text-align: center; border-radius: 8px; background: #ecf0f1; cursor: pointer; transition: 0.3s; }
-        #drop-zone.hover { background: #d5dbdb; border-color: #2980b9; }
-        #file-input { display: none; }
-        #results { margin-top: 20px; }
-        .result-item { background: #f9f9f9; padding: 15px; border-left: 5px solid #2ecc71; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .file-name { font-weight: bold; color: #34495e; }
-        .extracted-text { font-size: 1.2em; color: #e74c3c; font-family: monospace; margin-top: 5px; }
-        .loader { color: #7f8c8d; font-style: italic; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .drag-active {
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.05) !important;
+            transform: scale(1.01);
+        }
+        .dark .drag-active {
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        .sort-icon { transition: transform 0.2s; }
+        .sort-asc { transform: rotate(180deg); }
+        .sort-desc { transform: rotate(0deg); }
+        
+        .row-actions { opacity: 0; transition: opacity 0.2s; }
+        tr:hover .row-actions { opacity: 1; }
+        
+        @media (max-width: 768px) {
+            .row-actions { opacity: 1; }
+        }
+        
+        .toast {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        .number-cell { font-variant-numeric: tabular-nums; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
-<div class="container">
-    <h2>Image to Text Extractor <br><small style="font-size: 0.6em; color: #7f8c8d;">Ambil 11 Digit Pertama</small></h2>
-    
-    <div id="drop-zone">
-        <p>Drag & drop beberapa gambar di sini, atau <strong>klik untuk memilih file</strong></p>
-        <input type="file" id="file-input" multiple accept="image/*">
-    </div>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 w-80 pointer-events-none"></div>
 
-    <div id="results"></div>
-</div>
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary-600 text-white p-2 rounded-lg shadow-lg shadow-primary-500/30">
+                        <i data-lucide="filter" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight">LASIK Filter</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Auto-filter & Manager</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="app.toggleDarkMode()" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Toggle Dark Mode">
+                        <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                        <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+                    </button>
+                    
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <span id="totalCount">0 data</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-<script src="app.js"></script>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Upload Zone -->
+        <section class="animate-fade-in">
+            <div id="dropZone" class="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-8 sm:p-12 text-center transition-all duration-200 bg-white dark:bg-slate-800 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer group">
+                <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                
+                <div class="relative z-0 pointer-events-none">
+                    <div class="mx-auto w-16 h-16 mb-4 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="upload-cloud" class="w-8 h-8 text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-1">Unggah File</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 max-w-md mx-auto">
+                        Seret & lepas file XLSX, XLS, CSV, atau TXT di sini, atau klik untuk memilih.<br>
+                        Bisa memilih <span class="font-semibold text-primary-600 dark:text-primary-400">banyak file sekaligus</span>.
+                    </p>
+                    <div class="flex justify-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700">.XLSX</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700">.XLS</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700">.CSV</span>
+                        <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700">.TXT</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div id="progressContainer" class="hidden mt-4">
+                <div class="flex justify-between text-sm mb-1">
+                    <span id="progressText" class="font-medium">Memproses...</span>
+                    <span id="progressPercent" class="text-slate-500">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div id="progressBar" class="bg-primary-600 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Cards -->
+        <section id="statsSection" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Data</div>
+                <div class="text-2xl font-bold text-slate-800 dark:text-white" id="statTotal">0</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Saldo</div>
+                <div class="text-2xl font-bold text-primary-600 dark:text-primary-400 number-cell" id="statSaldo">Rp0</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Rata-rata Saldo</div>
+                <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 number-cell" id="statAvg">Rp0</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Jumlah Kartu</div>
+                <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 number-cell" id="statKartu">0</div>
+            </div>
+        </section>
+
+        <!-- Toolbar -->
+        <section id="toolbarSection" class="hidden flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center animate-fade-in">
+            <div class="relative w-full sm:w-96">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Cari data..." 
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-sm">
+            </div>
+            
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button onclick="app.copyAll()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Copy Semua</span>
+                </button>
+                
+                <div class="relative group">
+                    <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors text-sm font-medium shadow-lg shadow-primary-500/25">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Export</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </button>
+                    <div class="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 overflow-hidden">
+                        <button onclick="app.exportXLSX()" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm flex items-center gap-2">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-500"></i> XLSX
+                        </button>
+                        <button onclick="app.exportCSV()" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i> CSV
+                        </button>
+                        <button onclick="app.exportTXT()" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm flex items-center gap-2">
+                            <i data-lucide="file" class="w-4 h-4 text-blue-500"></i> TXT
+                        </button>
+                    </div>
+                </div>
+                
+                <button onclick="app.clearAll()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:bg-danger-50 dark:hover:bg-danger-900/20 hover:text-danger-600 dark:hover:text-danger-400 hover:border-danger-200 dark:hover:border-danger-800 transition-colors text-sm font-medium shadow-sm">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section id="tableSection" class="hidden bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden animate-slide-up">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('kpj')">
+                                <div class="flex items-center gap-1">KPJ <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-kpj"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('nama')">
+                                <div class="flex items-center gap-1">Nama <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-nama"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('nik')">
+                                <div class="flex items-center gap-1">NIK <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-nik"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('tglLahir')">
+                                <div class="flex items-center gap-1">Tgl Lahir <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-tglLahir"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('lokasi')">
+                                <div class="flex items-center gap-1">Kota, Kec <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-lokasi"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('status')">
+                                <div class="flex items-center gap-1">Status <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-status"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold min-w-[300px]">Detail</th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none text-right" onclick="app.sort('jumlahKartu')">
+                                <div class="flex items-center justify-end gap-1">Jml Kartu <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-jumlahKartu"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" onclick="app.sort('kategori')">
+                                <div class="flex items-center gap-1">Kategori <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-kategori"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none text-right" onclick="app.sort('saldo')">
+                                <div class="flex items-center justify-end gap-1">Saldo <i data-lucide="arrow-up-down" class="w-3 h-3 sort-icon" id="sort-saldo"></i></div>
+                            </th>
+                            <th class="px-4 py-3 font-semibold text-center w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="flex flex-col sm:flex-row justify-between items-center px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 gap-3">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    Menampilkan <span id="pageStart" class="font-semibold">0</span> - <span id="pageEnd" class="font-semibold">0</span> dari <span id="pageTotal" class="font-semibold">0</span> data
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.prevPage()" id="btnPrev" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <span id="pageInfo" class="text-sm font-medium px-2">Page 1</span>
+                    <button onclick="app.nextPage()" id="btnNext" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Empty State -->
+        <section id="emptyState" class="hidden py-16 text-center animate-fade-in">
+            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <i data-lucide="inbox" class="w-10 h-10 text-slate-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">Belum ada data</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                Unggah file untuk memulai. Hanya data dengan Status LASIK = LAYAK, Detail mengandung JMO, dan Saldo ≥ Rp1.000.000 yang akan ditampilkan.
+            </p>
+        </section>
+
+        <!-- Initial State -->
+        <section id="initialState" class="py-12 text-center animate-fade-in">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+                <i data-lucide="file-plus" class="w-8 h-8 text-primary-500"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">Siap Memfilter</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                Sistem akan otomatis menyaring data sesuai ketentuan LASIK dan menyimpan hasilnya secara lokal di perangkat Anda.
+            </p>
+        </section>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // APPLICATION LOGIC
+        // ==========================================
+        
+        const TARGET_DETAIL = "Silahkan Gunakan JMO (Jamsostek Mobile) Agar Pengajuan Klaim Anda Lebih Cepat dan Mudah.";
+        const STORAGE_KEY = 'lasik_filtered_data';
+        const STORAGE_DARK = 'lasik_dark_mode';
+        const ROWS_PER_PAGE = 50;
+        
+        class LasikApp {
+            constructor() {
+                this.data = [];
+                this.filteredData = [];
+                this.currentPage = 1;
+                this.sortColumn = null;
+                this.sortDirection = 'asc';
+                this.searchQuery = '';
+                this.processing = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadDarkMode();
+                this.loadFromStorage();
+                this.setupEventListeners();
+                this.render();
+                lucide.createIcons();
+            }
+            
+            // ---------- Event Listeners ----------
+            setupEventListeners() {
+                const dropZone = document.getElementById('dropZone');
+                const fileInput = document.getElementById('fileInput');
+                const searchInput = document.getElementById('searchInput');
+                
+                // Drag & Drop
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, false);
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-active'), false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-active'), false);
+                });
+                
+                dropZone.addEventListener('drop', (e) => this.handleFiles(e.dataTransfer.files), false);
+                fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files), false);
+                
+                // Search
+                searchInput.addEventListener('input', (e) => {
+                    this.searchQuery = e.target.value.toLowerCase();
+                    this.currentPage = 1;
+                    this.applyFilters();
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'a') {
+                        e.preventDefault();
+                        this.copyAll();
+                    }
+                });
+            }
+            
+            // ---------- File Processing ----------
+            async handleFiles(files) {
+                if (this.processing) return;
+                this.processing = true;
+                
+                const validFiles = Array.from(files).filter(f => {
+                    const ext = f.name.split('.').pop().toLowerCase();
+                    return ['xlsx', 'xls', 'csv', 'txt'].includes(ext);
+                });
+                
+                if (validFiles.length === 0) {
+                    this.showToast('Format file tidak didukung', 'error');
+                    this.processing = false;
+                    return;
+                }
+                
+                this.showProgress(true);
+                let processed = 0;
+                
+                for (const file of validFiles) {
+                    this.updateProgressText(`Membaca ${file.name}...`);
+                    
+                    try {
+                        const rows = await this.parseFile(file);
+                        const filtered = this.filterRows(rows);
+                        this.data.push(...filtered);
+                        processed++;
+                    } catch (err) {
+                        console.error(err);
+                        this.showToast(`Gagal memproses ${file.name}`, 'error');
+                    }
+                }
+                
+                this.updateProgress(100);
+                await this.delay(300);
+                
+                this.showProgress(false);
+                this.saveToStorage();
+                this.applyFilters();
+                this.showToast(`Berhasil memproses ${this.data.length} data valid`, 'success');
+                this.processing = false;
+                
+                // Reset input
+                document.getElementById('fileInput').value = '';
+            }
+            
+            parseFile(file) {
+                return new Promise((resolve, reject) => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    
+                    if (ext === 'xlsx' || ext === 'xls') {
+                        this.parseXLSX(file, resolve, reject);
+                    } else {
+                        this.parseCSV(file, resolve, reject);
+                    }
+                });
+            }
+            
+            parseXLSX(file, resolve, reject) {
+                const reader = new FileReader();
+                
+                reader.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 80);
+                        this.updateProgress(pct);
+                    }
+                };
+                
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                        
+                        if (jsonData.length < 2) {
+                            resolve([]);
+                            return;
+                        }
+                        
+                        const headers = jsonData[0].map(h => String(h).trim());
+                        const rows = jsonData.slice(1).map(row => {
+                            const obj = {};
+                            headers.forEach((h, i) => {
+                                obj[h] = row[i] !== undefined ? row[i] : '';
+                            });
+                            return obj;
+                        });
+                        
+                        resolve(rows);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            }
+            
+            parseCSV(file, resolve, reject) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    encoding: "UTF-8",
+                    complete: (results) => {
+                        resolve(results.data);
+                    },
+                    error: (err) => reject(err),
+                    step: (row, parser) => {
+                        // Optional: progress tracking per row
+                    }
+                });
+            }
+            
+            // ---------- Filtering ----------
+            filterRows(rows) {
+                return rows.filter(row => {
+                    const status = String(row['Status LASIK'] || row['status lasik'] || '').trim();
+                    const detail = String(row['Detail LASIK'] || row['detail lasik'] || '').trim();
+                    const saldoRaw = row['Saldo LASIK'] || row['saldo lasik'] || 0;
+                    
+                    // Criterion 1: Status LASIK = LAYAK
+                    if (status !== 'LAYAK') return false;
+                    
+                    // Criterion 2: Detail contains exact JMO sentence
+                    if (!detail.includes(TARGET_DETAIL)) return false;
+                    
+                    // Criterion 3: Saldo is numeric and >= 1,000,000
+                    const saldoStr = String(saldoRaw).replace(/[^0-9.-]+/g, '');
+                    const saldo = parseFloat(saldoStr);
+                    if (isNaN(saldo) || saldo < 1000000) return false;
+                    
+                    return true;
+                }).map(row => ({
+                    kpj: String(row['KPJ'] || ''),
+                    nama: String(row['Nama'] || ''),
+                    nik: String(row['NIK'] || ''),
+                    tglLahir: String(row['Tgl Lahir'] || ''),
+                    kota: String(row['Kota'] || ''),
+                    kecamatan: String(row['Kecamatan'] || ''),
+                    status: String(row['Status LASIK'] || ''),
+                    detail: String(row['Detail LASIK'] || ''),
+                    jumlahKartu: parseInt(row['Jumlah Kartu'] || 0) || 0,
+                    kategori: String(row['Kategori'] || ''),
+                    saldo: parseFloat(String(row['Saldo LASIK'] || '0').replace(/[^0-9.-]+/g, '')) || 0
+                }));
+            }
+            
+            // ---------- Display Logic ----------
+            applyFilters() {
+                let result = [...this.data];
+                
+                // Search
+                if (this.searchQuery) {
+                    const q = this.searchQuery;
+                    result = result.filter(row => {
+                        return (
+                            row.kpj.toLowerCase().includes(q) ||
+                            row.nama.toLowerCase().includes(q) ||
+                            row.nik.toLowerCase().includes(q) ||
+                            row.tglLahir.toLowerCase().includes(q) ||
+                            row.kota.toLowerCase().includes(q) ||
+                            row.kecamatan.toLowerCase().includes(q) ||
+                            row.status.toLowerCase().includes(q) ||
+                            row.detail.toLowerCase().includes(q) ||
+                            row.kategori.toLowerCase().includes(q) ||
+                            String(row.jumlahKartu).includes(q) ||
+                            this.formatRupiah(row.saldo).toLowerCase().includes(q)
+                        );
+                    });
+                }
+                
+                // Sort
+                if (this.sortColumn) {
+                    result.sort((a, b) => {
+                        let valA = a[this.sortColumn];
+                        let valB = b[this.sortColumn];
+                        
+                        // Numeric sort for specific columns
+                        if (['saldo', 'jumlahKartu'].includes(this.sortColumn)) {
+                            valA = parseFloat(valA) || 0;
+                            valB = parseFloat(valB) || 0;
+                        } else {
+                            valA = String(valA).toLowerCase();
+                            valB = String(valB).toLowerCase();
+                        }
+                        
+                        if (valA < valB) return this.sortDirection === 'asc' ? -1 : 1;
+                        if (valA > valB) return this.sortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                
+                this.filteredData = result;
+                this.currentPage = Math.min(this.currentPage, Math.max(1, Math.ceil(result.length / ROWS_PER_PAGE)));
+                this.render();
+            }
+            
+            sort(column) {
+                if (this.sortColumn === column) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortColumn = column;
+                    this.sortDirection = 'asc';
+                }
+                this.applyFilters();
+            }
+            
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.render();
+                }
+            }
+            
+            nextPage() {
+                const maxPage = Math.ceil(this.filteredData.length / ROWS_PER_PAGE);
+                if (this.currentPage < maxPage) {
+                    this.currentPage++;
+                    this.render();
+                }
+            }
+            
+            // ---------- Rendering ----------
+            render() {
+                const hasData = this.data.length > 0;
+                const hasFiltered = this.filteredData.length > 0;
+                
+                // Toggle sections
+                document.getElementById('statsSection').classList.toggle('hidden', !hasData);
+                document.getElementById('toolbarSection').classList.toggle('hidden', !hasData);
+                document.getElementById('tableSection').classList.toggle('hidden', !hasData);
+                document.getElementById('emptyState').classList.toggle('hidden', hasData);
+                document.getElementById('initialState').classList.toggle('hidden', hasData);
+                
+                if (!hasData) {
+                    lucide.createIcons();
+                    return;
+                }
+                
+                // Update stats
+                const totalSaldo = this.data.reduce((sum, r) => sum + r.saldo, 0);
+                const totalKartu = this.data.reduce((sum, r) => sum + r.jumlahKartu, 0);
+                const avgSaldo = this.data.length ? totalSaldo / this.data.length : 0;
+                
+                document.getElementById('statTotal').textContent = this.data.length.toLocaleString('id-ID');
+                document.getElementById('statSaldo').textContent = this.formatRupiah(totalSaldo);
+                document.getElementById('statAvg').textContent = this.formatRupiah(avgSaldo);
+                document.getElementById('statKartu').textContent = totalKartu.toLocaleString('id-ID');
+                document.getElementById('totalCount').textContent = `${this.data.length} data`;
+                
+                // Pagination
+                const start = (this.currentPage - 1) * ROWS_PER_PAGE;
+                const end = Math.min(start + ROWS_PER_PAGE, this.filteredData.length);
+                const pageData = this.filteredData.slice(start, end);
+                const maxPage = Math.max(1, Math.ceil(this.filteredData.length / ROWS_PER_PAGE));
+                
+                document.getElementById('pageStart').textContent = this.filteredData.length ? start + 1 : 0;
+                document.getElementById('pageEnd').textContent = end;
+                document.getElementById('pageTotal').textContent = this.filteredData.length.toLocaleString('id-ID');
+                document.getElementById('pageInfo').textContent = `Page ${this.currentPage} / ${maxPage}`;
+                document.getElementById('btnPrev').disabled = this.currentPage <= 1;
+                document.getElementById('btnNext').disabled = this.currentPage >= maxPage;
+                
+                // Render table
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = pageData.map((row, idx) => {
+                    const realIndex = start + idx;
+                    const lokasi = `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`.trim() || '-';
+                    
+                    return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-white number-cell">${row.kpj}</td>
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">${this.escapeHtml(row.nama)}</td>
+                        <td class="px-4 py-3 number-cell text-slate-600 dark:text-slate-300">${row.nik}</td>
+                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${row.tglLahir}</td>
+                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title="${this.escapeHtml(lokasi)}">${this.escapeHtml(lokasi)}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                ${row.status}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[350px] truncate" title="${this.escapeHtml(row.detail)}">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 block mb-0.5">JMO</span>
+                            ${this.escapeHtml(row.detail.substring(0, 60))}${row.detail.length > 60 ? '...' : ''}
+                        </td>
+                        <td class="px-4 py-3 text-right number-cell font-medium text-slate-700 dark:text-slate-200">${row.jumlahKartu}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${row.kategori === 'LASIK' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}">
+                                ${row.kategori}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right number-cell font-bold text-slate-800 dark:text-white">${this.formatRupiah(row.saldo)}</td>
+                        <td class="px-4 py-3">
+                            <div class="row-actions flex items-center justify-center gap-1">
+                                <button onclick="app.copyRow(${realIndex})" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" title="Copy baris">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="app.deleteRow(${realIndex})" class="p-1.5 rounded-lg hover:bg-danger-100 dark:hover:bg-danger-900/30 text-slate-500 dark:text-slate-400 hover:text-danger-600 dark:hover:text-danger-400 transition-colors" title="Hapus baris">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+                
+                // Update sort icons
+                document.querySelectorAll('.sort-icon').forEach(icon => {
+                    icon.classList.remove('sort-asc', 'sort-desc', 'text-primary-600');
+                    icon.classList.add('text-slate-400');
+                });
+                
+                if (this.sortColumn) {
+                    const activeIcon = document.getElementById(`sort-${this.sortColumn}`);
+                    if (activeIcon) {
+                        activeIcon.classList.remove('text-slate-400');
+                        activeIcon.classList.add('text-primary-600', this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+                    }
+                }
+                
+                lucide.createIcons();
+            }
+            
+            // ---------- Actions ----------
+            copyRow(index) {
+                const row = this.filteredData[index];
+                if (!row) return;
+                
+                const lokasi = `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`;
+                const text = [
+                    row.kpj, row.nama, row.nik, row.tglLahir, lokasi,
+                    row.status, row.detail, row.jumlahKartu, row.kategori, this.formatRupiah(row.saldo)
+                ].join('\t');
+                
+                this.copyToClipboard(text);
+                this.showToast('Baris berhasil disalin', 'success');
+            }
+            
+            copyAll() {
+                if (this.filteredData.length === 0) {
+                    this.showToast('Tidak ada data untuk disalin', 'error');
+                    return;
+                }
+                
+                const headers = ['KPJ', 'Nama', 'NIK', 'Tgl Lahir', 'Kota, Kecamatan', 'Status LASIK', 'Detail LASIK', 'Jumlah Kartu', 'Kategori', 'Saldo LASIK'];
+                let text = headers.join('\t') + '\n';
+                
+                this.filteredData.forEach(row => {
+                    const lokasi = `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`;
+                    text += [
+                        row.kpj, row.nama, row.nik, row.tglLahir, lokasi,
+                        row.status, row.detail, row.jumlahKartu, row.kategori, this.formatRupiah(row.saldo)
+                    ].join('\t') + '\n';
+                });
+                
+                this.copyToClipboard(text);
+                this.showToast(`${this.filteredData.length} baris berhasil disalin`, 'success');
+            }
+            
+            deleteRow(index) {
+                if (!confirm('Yakin ingin menghapus baris ini?')) return;
+                
+                // Find and remove from main data array
+                const row = this.filteredData[index];
+                const mainIndex = this.data.findIndex(r => 
+                    r.kpj === row.kpj && r.nik === row.nik && r.saldo === row.saldo
+                );
+                
+                if (mainIndex > -1) {
+                    this.data.splice(mainIndex, 1);
+                    this.saveToStorage();
+                    this.applyFilters();
+                    this.showToast('Baris dihapus', 'success');
+                }
+            }
+            
+            clearAll() {
+                if (!confirm('Yakin ingin menghapus SEMUA data? Data yang tersimpan akan dihapus permanen.')) return;
+                
+                this.data = [];
+                this.filteredData = [];
+                this.currentPage = 1;
+                this.searchQuery = '';
+                document.getElementById('searchInput').value = '';
+                localStorage.removeItem(STORAGE_KEY);
+                this.render();
+                this.showToast('Semua data telah dihapus', 'success');
+            }
+            
+            // ---------- Export ----------
+            exportXLSX() {
+                if (this.filteredData.length === 0) {
+                    this.showToast('Tidak ada data untuk diekspor', 'error');
+                    return;
+                }
+                
+                const exportData = this.filteredData.map(row => ({
+                    'KPJ': row.kpj,
+                    'Nama': row.nama,
+                    'NIK': row.nik,
+                    'Tgl Lahir': row.tglLahir,
+                    'Kota, Kecamatan': `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`,
+                    'Status LASIK': row.status,
+                    'Detail LASIK': row.detail,
+                    'Jumlah Kartu': row.jumlahKartu,
+                    'Kategori': row.kategori,
+                    'Saldo LASIK': row.saldo
+                }));
+                
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'LASIK Filtered');
+                XLSX.writeFile(wb, `LASIK_Filtered_${new Date().toISOString().slice(0,10)}.xlsx`);
+                this.showToast('File XLSX berhasil diunduh', 'success');
+            }
+            
+            exportCSV() {
+                if (this.filteredData.length === 0) {
+                    this.showToast('Tidak ada data untuk diekspor', 'error');
+                    return;
+                }
+                
+                const exportData = this.filteredData.map(row => ({
+                    'KPJ': row.kpj,
+                    'Nama': row.nama,
+                    'NIK': row.nik,
+                    'Tgl Lahir': row.tglLahir,
+                    'Kota, Kecamatan': `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`,
+                    'Status LASIK': row.status,
+                    'Detail LASIK': row.detail,
+                    'Jumlah Kartu': row.jumlahKartu,
+                    'Kategori': row.kategori,
+                    'Saldo LASIK': row.saldo
+                }));
+                
+                const csv = Papa.unparse(exportData);
+                this.downloadFile(csv, `LASIK_Filtered_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8;');
+                this.showToast('File CSV berhasil diunduh', 'success');
+            }
+            
+            exportTXT() {
+                if (this.filteredData.length === 0) {
+                    this.showToast('Tidak ada data untuk diekspor', 'error');
+                    return;
+                }
+                
+                const headers = ['KPJ', 'Nama', 'NIK', 'Tgl Lahir', 'Kota, Kecamatan', 'Status LASIK', 'Detail LASIK', 'Jumlah Kartu', 'Kategori', 'Saldo LASIK'];
+                let txt = headers.join('\t') + '\n';
+                
+                this.filteredData.forEach(row => {
+                    const lokasi = `${row.kota}${row.kota && row.kecamatan ? ', ' : ''}${row.kecamatan}`;
+                    txt += [
+                        row.kpj, row.nama, row.nik, row.tglLahir, lokasi,
+                        row.status, row.detail, row.jumlahKartu, row.kategori, row.saldo
+                    ].join('\t') + '\n';
+                });
+                
+                this.downloadFile(txt, `LASIK_Filtered_${new Date().toISOString().slice(0,10)}.txt`, 'text/plain;charset=utf-8;');
+                this.showToast('File TXT berhasil diunduh', 'success');
+            }
+            
+            // ---------- Utilities ----------
+            formatRupiah(num) {
+                if (isNaN(num)) return 'Rp0';
+                return 'Rp' + Math.floor(num).toLocaleString('id-ID');
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            copyToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+            }
+            
+            downloadFile(content, filename, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            // ---------- Progress ----------
+            showProgress(show) {
+                const el = document.getElementById('progressContainer');
+                el.classList.toggle('hidden', !show);
+                if (!show) this.updateProgress(0);
+            }
+            
+            updateProgress(percent) {
+                document.getElementById('progressBar').style.width = percent + '%';
+                document.getElementById('progressPercent').textContent = percent + '%';
+            }
+            
+            updateProgressText(text) {
+                document.getElementById('progressText').textContent = text;
+            }
+            
+            // ---------- Storage ----------
+            saveToStorage() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+                } catch (e) {
+                    console.warn('LocalStorage penuh atau tidak tersedia');
+                }
+            }
+            
+            loadFromStorage() {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        this.data = JSON.parse(stored);
+                        if (this.data.length > 0) {
+                            this.applyFilters();
+                            this.showToast(`Data sebelumnya telah dipulihkan (${this.data.length} baris)`, 'info');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Gagal memuat data dari storage', e);
+                }
+            }
+            
+            // ---------- Dark Mode ----------
+            toggleDarkMode() {
+                const html = document.documentElement;
+                html.classList.toggle('dark');
+                const isDark = html.classList.contains('dark');
+                localStorage.setItem(STORAGE_DARK, isDark ? '1' : '0');
+            }
+            
+            loadDarkMode() {
+                const stored = localStorage.getItem(STORAGE_DARK);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const isDark = stored ? stored === '1' : prefersDark;
+                
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+            
+            // ---------- Toast ----------
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                
+                const colors = {
+                    success: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                    error: 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800',
+                    info: 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                };
+                
+                const icons = {
+                    success: 'check-circle',
+                    error: 'alert-circle',
+                    info: 'info'
+                };
+                
+                toast.className = `toast pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${colors[type]}`;
+                toast.innerHTML = `
+                    <i data-lucide="${icons[type]}" class="w-5 h-5 shrink-0"></i>
+                    <span class="text-sm font-medium">${message}</span>
+                `;
+                
+                container.appendChild(toast);
+                lucide.createIcons();
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    toast.style.transition = 'all 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+        
+        // Initialize
+        const app = new LasikApp();
+    </script>
 </body>
 </html>
