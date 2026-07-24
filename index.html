@@ -7,101 +7,47 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #06b6d4;
-            --bg: #f1f5f9;
-            --card: #ffffff;
-            --text: #1e293b;
-            --text-secondary: #64748b;
+            --primary: #2563eb; --primary-dark: #1d4ed8; --success: #10b981;
+            --warning: #f59e0b; --danger: #ef4444; --bg: #f1f5f9;
+            --card: #ffffff; --text: #1e293b; --text-secondary: #64748b;
             --border: #e2e8f0;
             --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
             --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
         }
         [data-theme="dark"] {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border: #334155;
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9;
+            --text-secondary: #94a3b8; --border: #334155;
             --shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.3);
             --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.3);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            transition: all 0.3s ease;
-        }
+        body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-
-        /* Header */
         .header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
-        }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%; right: -10%;
-            width: 400px; height: 400px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
+            color: white; padding: 30px; border-radius: 16px; margin-bottom: 24px;
+            box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
         }
         .header h1 { font-size: 1.8rem; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
         .header p { opacity: 0.9; font-size: 0.95rem; }
-        .header-actions {
-            position: absolute;
-            top: 20px; right: 20px;
-            display: flex; gap: 10px;
-        }
+        .header-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
         .btn-icon {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
+            width: 40px; height: 40px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.2); color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
         .btn-icon:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
-
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card {
-            background: var(--card);
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
+            background: var(--card); border-radius: 14px; padding: 20px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
             transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
         }
         .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
         .stat-card .icon {
-            width: 48px; height: 48px;
-            border-radius: 12px;
+            width: 48px; height: 48px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-            margin-bottom: 12px;
+            font-size: 1.4rem; margin-bottom: 12px;
         }
         .stat-card .icon.blue { background: #dbeafe; color: var(--primary); }
         .stat-card .icon.green { background: #d1fae5; color: var(--success); }
@@ -110,538 +56,200 @@
         .stat-card .icon.purple { background: #ede9fe; color: #7c3aed; }
         .stat-card .label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px; }
         .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--text); }
-        .stat-card .trend {
-            font-size: 0.8rem;
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .trend.up { color: var(--success); }
-        .trend.down { color: var(--danger); }
-
-        /* Upload & Toolbar */
+        .stat-card .trend { font-size: 0.8rem; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        .trend.up { color: var(--success); } .trend.down { color: var(--danger); }
         .toolbar {
-            background: var(--card);
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
+            background: var(--card); border-radius: 14px; padding: 20px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+            margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
         }
         .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 16px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            flex: 1;
-            min-width: 250px;
+            border: 2px dashed var(--border); border-radius: 12px; padding: 16px 24px;
+            text-align: center; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 250px;
         }
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--primary);
-            background: rgba(37, 99, 235, 0.05);
-        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: rgba(37,99,235,0.05); }
         .upload-zone i { font-size: 1.5rem; color: var(--primary); margin-bottom: 8px; }
         .upload-zone p { font-size: 0.9rem; color: var(--text-secondary); }
         .upload-zone input { display: none; }
-
-        .search-box {
-            position: relative;
-            flex: 2;
-            min-width: 250px;
-        }
+        .search-box { position: relative; flex: 2; min-width: 250px; }
         .search-box input {
-            width: 100%;
-            padding: 12px 16px 12px 44px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 0.95rem;
-            transition: all 0.2s;
+            width: 100%; padding: 12px 16px 12px 44px; border: 2px solid var(--border);
+            border-radius: 12px; background: var(--bg); color: var(--text); font-size: 0.95rem;
         }
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-        .search-box i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .search-box i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .filter-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .toggle-filter {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border-radius: 10px;
-            border: 2px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
+            display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+            border-radius: 10px; border: 2px solid var(--border); background: var(--bg);
+            color: var(--text); font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; user-select: none;
         }
-        .toggle-filter.active {
-            border-color: var(--success);
-            background: #d1fae5;
-            color: #065f46;
-        }
+        .toggle-filter.active { border-color: var(--success); background: #d1fae5; color: #065f46; }
         .toggle-filter input { display: none; }
-
         .btn {
-            padding: 12px 20px;
-            border-radius: 10px;
-            border: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            padding: 12px 20px; border-radius: 10px; border: none; font-size: 0.9rem;
+            font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
             transition: all 0.2s;
         }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
         .btn-success { background: var(--success); color: white; }
         .btn-success:hover { background: #059669; }
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--border);
-            color: var(--text);
-        }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
         .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
         .btn-copy {
-            padding: 8px 14px;
-            border-radius: 8px;
-            border: none;
-            background: #dbeafe;
-            color: var(--primary);
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
+            padding: 8px 14px; border-radius: 8px; border: none; background: #dbeafe;
+            color: var(--primary); font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
         }
         .btn-copy:hover { background: var(--primary); color: white; }
-        .btn-copy.copied { background: var(--success); color: white; }
-
-        /* Table */
         .table-container {
-            background: var(--card);
-            border-radius: 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            overflow: hidden;
-            margin-bottom: 20px;
+            background: var(--card); border-radius: 14px; box-shadow: var(--shadow);
+            border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px;
         }
         .table-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
         }
         .table-header h3 { font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
         .badge-primary { background: #dbeafe; color: var(--primary); }
         .badge-success { background: #d1fae5; color: var(--success); }
-        .badge-warning { background: #fef3c7; color: var(--warning); }
-        .badge-danger { background: #fee2e2; color: var(--danger); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         thead { background: var(--bg); }
         th {
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
+            padding: 14px 16px; text-align: left; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;
+            cursor: pointer; user-select: none; white-space: nowrap;
         }
         th:hover { color: var(--primary); }
         th .sort-icon { margin-left: 6px; opacity: 0.5; }
-        th.sort-asc .sort-icon::after { content: '\f0de'; font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 1; color: var(--primary); }
-        th.sort-desc .sort-icon::after { content: '\f0dd'; font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 1; color: var(--primary); }
-        td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text);
-        }
+        th.sort-asc .sort-icon::after { content: "\f0de"; font-family: "Font Awesome 6 Free"; font-weight: 900; opacity: 1; color: var(--primary); }
+        th.sort-desc .sort-icon::after { content: "\f0dd"; font-family: "Font Awesome 6 Free"; font-weight: 900; opacity: 1; color: var(--primary); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text); }
         tr:hover td { background: rgba(37,99,235,0.03); }
         tr:last-child td { border-bottom: none; }
-
         .nik { font-family: monospace; font-weight: 600; color: var(--primary); }
         .saldo { font-weight: 700; color: var(--success); }
         .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
         }
-        .status-pill.warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .status-pill.success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        /* Expandable Row */
+        .status-pill.warning { background: #fef3c7; color: #92400e; }
         .detail-row { display: none; }
         .detail-row.active { display: table-row; }
         .detail-row td { padding: 0; background: var(--bg) !important; }
-        .detail-content {
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-        }
-        .detail-item {
-            background: var(--card);
-            padding: 14px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-        }
+        .detail-content { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .detail-item { background: var(--card); padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
         .detail-item .label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
         .detail-item .value { font-weight: 600; color: var(--text); word-break: break-all; }
-
-        .expand-btn {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            border: none;
-            background: var(--bg);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .expand-btn:hover { background: var(--primary); color: white; }
-        .expand-btn.active { transform: rotate(180deg); }
-
-        /* Pagination */
         .pagination {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 12px;
         }
         .page-info { color: var(--text-secondary); font-size: 0.9rem; }
         .page-buttons { display: flex; gap: 6px; }
         .page-btn {
-            min-width: 36px; height: 36px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--card);
-            color: var(--text);
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            min-width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--card); color: var(--text); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
         }
         .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
         .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        /* Column Toggle */
-        .column-toggle {
-            position: relative;
-        }
+        .column-toggle { position: relative; }
         .column-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
-            padding: 12px;
-            min-width: 200px;
-            display: none;
-            z-index: 100;
+            position: absolute; top: calc(100% + 8px); right: 0; background: var(--card);
+            border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg);
+            padding: 12px; min-width: 200px; display: none; z-index: 100;
         }
         .column-menu.show { display: block; }
-        .column-menu label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s;
-            font-size: 0.9rem;
-        }
+        .column-menu label { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem; }
         .column-menu label:hover { background: var(--bg); }
-        .column-menu input[type="checkbox"] {
-            width: 18px; height: 18px;
-            accent-color: var(--primary);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
+        .column-menu input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
         .empty-state h3 { margin-bottom: 8px; color: var(--text); }
-
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast {
-            background: var(--card);
-            border-left: 4px solid var(--primary);
-            padding: 16px 20px;
-            border-radius: 10px;
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
-            min-width: 300px;
+            background: var(--card); border-left: 4px solid var(--primary); padding: 16px 20px;
+            border-radius: 10px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 12px;
+            animation: slideIn 0.3s ease; min-width: 300px;
         }
         .toast.success { border-left-color: var(--success); }
         .toast.error { border-left-color: var(--danger); }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Copy Modal */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.6);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9997;
-            padding: 20px;
+            position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 9997; padding: 20px;
         }
         .modal-overlay.active { display: flex; }
-        .modal-box {
-            background: var(--card);
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            max-width: 500px;
-            width: 100%;
-            max-height: 80vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .modal-box { background: var(--card); border-radius: 16px; box-shadow: var(--shadow-lg); max-width: 500px; width: 100%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .modal-header h3 { display: flex; align-items: center; gap: 10px; }
-        .modal-close {
-            width: 36px; height: 36px;
-            border-radius: 10px;
-            border: none;
-            background: var(--bg);
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
+        .modal-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); color: var(--text-secondary); cursor: pointer; }
         .modal-close:hover { background: var(--danger); color: white; }
-        .modal-body {
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .copy-preview {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            font-family: monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-break: break-word;
-            color: var(--text);
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .modal-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        /* Responsive */
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .copy-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--text); max-height: 300px; overflow-y: auto; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+        .confirm-modal .modal-box { max-width: 420px; }
+        .confirm-modal .modal-body p { color: var(--text-secondary); line-height: 1.6; }
+        .confirm-modal .modal-body strong { color: var(--danger); }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 9998; }
+        .loading-overlay.active { display: flex; }
+        .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 768px) {
-            .header h1 { font-size: 1.3rem; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .toolbar { flex-direction: column; }
-            .search-box, .upload-zone { width: 100%; }
+            .header h1 { font-size: 1.3rem; } .stats-grid { grid-template-columns: 1fr 1fr; }
+            .toolbar { flex-direction: column; } .search-box, .upload-zone { width: 100%; }
             th, td { padding: 10px 12px; font-size: 0.85rem; }
             .table-header { flex-direction: column; align-items: flex-start; }
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.5);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9998;
-        }
-        .loading-overlay.active { display: flex; }
-        .spinner {
-            width: 48px; height: 48px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Print */
-        @media print {
-            .header-actions, .toolbar, .pagination, .expand-btn, .column-toggle, .btn-copy { display: none !important; }
-            .table-container { box-shadow: none; border: 1px solid #ddd; }
-            body { background: white; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <div class="header-actions">
-                <button class="btn-icon" onclick="toggleTheme()" title="Toggle Dark Mode">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
-                <button class="btn-icon" onclick="window.print()" title="Print">
-                    <i class="fas fa-print"></i>
-                </button>
+                <button class="btn-icon" onclick="toggleTheme()" title="Toggle Dark Mode"><i class="fas fa-moon" id="themeIcon"></i></button>
+                <button class="btn-icon" onclick="window.print()" title="Print"><i class="fas fa-print"></i></button>
             </div>
             <h1><i class="fas fa-shield-halved"></i> Dashboard Filter BPJS - Klaim JHT</h1>
             <p>Menampilkan data peserta dengan kriteria: Belum Pengkinian Data, Layak (JHTA000), Klaim dapat melalui JMO</p>
         </div>
-
-        <!-- Stats -->
         <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
-                <div class="icon blue"><i class="fas fa-users"></i></div>
-                <div class="label">Total Peserta</div>
-                <div class="value" id="statTotal">0</div>
-                <div class="trend up"><i class="fas fa-arrow-up"></i> Data terfilter</div>
-            </div>
-            <div class="stat-card">
-                <div class="icon green"><i class="fas fa-money-bill-wave"></i></div>
-                <div class="label">Total Saldo</div>
-                <div class="value" id="statSaldo">Rp 0</div>
-            </div>
-            <div class="stat-card">
-                <div class="icon orange"><i class="fas fa-credit-card"></i></div>
-                <div class="label">Rata-rata Saldo</div>
-                <div class="value" id="statAvg">Rp 0</div>
-            </div>
-            <div class="stat-card">
-                <div class="icon purple"><i class="fas fa-gem"></i></div>
-                <div class="label">Saldo >= 1 Juta</div>
-                <div class="value" id="stat1M">0</div>
-                <div class="trend up"><i class="fas fa-gem"></i> High value</div>
-            </div>
-            <div class="stat-card">
-                <div class="icon red"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="label">Belum Pengkinian</div>
-                <div class="value" id="statWarning">0</div>
-                <div class="trend down"><i class="fas fa-exclamation-circle"></i> Perlu tindak lanjut</div>
-            </div>
+            <div class="stat-card"><div class="icon blue"><i class="fas fa-users"></i></div><div class="label">Total Peserta</div><div class="value" id="statTotal">0</div><div class="trend up"><i class="fas fa-arrow-up"></i> Data terfilter</div></div>
+            <div class="stat-card"><div class="icon green"><i class="fas fa-money-bill-wave"></i></div><div class="label">Total Saldo</div><div class="value" id="statSaldo">Rp 0</div></div>
+            <div class="stat-card"><div class="icon orange"><i class="fas fa-credit-card"></i></div><div class="label">Rata-rata Saldo</div><div class="value" id="statAvg">Rp 0</div></div>
+            <div class="stat-card"><div class="icon purple"><i class="fas fa-gem"></i></div><div class="label">Saldo >= 1 Juta</div><div class="value" id="stat1M">0</div><div class="trend up"><i class="fas fa-gem"></i> High value</div></div>
+            <div class="stat-card"><div class="icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="label">Belum Pengkinian</div><div class="value" id="statWarning">0</div><div class="trend down"><i class="fas fa-exclamation-circle"></i> Perlu tindak lanjut</div></div>
         </div>
-
-        <!-- Toolbar -->
         <div class="toolbar">
             <div class="upload-zone" onclick="document.getElementById('csvInput').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                 <input type="file" id="csvInput" accept=".csv" multiple onchange="handleFile(event)">
                 <i class="fas fa-cloud-upload-alt"></i>
                 <p><strong>Klik atau drag & drop</strong> file CSV di sini<br><small style="color:var(--text-secondary)">Bisa banyak file sekaligus</small></p>
             </div>
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Cari nama, NIK, email, atau saldo..." oninput="debounceSearch()">
-            </div>
+            <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Cari nama, NIK, email, atau saldo..." oninput="debounceSearch()"></div>
             <div class="filter-group">
-                <label class="toggle-filter" id="filter1MToggle" onclick="toggleFilter1M()">
-                    <input type="checkbox" id="filter1MCheck">
-                    <i class="fas fa-gem"></i> Saldo >= 1 Juta
-                </label>
-            </div>
-            <button class="btn btn-success" onclick="exportCSV()">
-                <i class="fas fa-file-csv"></i> Export CSV
-            </button>
-            <button class="btn btn-success" onclick="exportExcel()">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-            <div class="column-toggle">
-                <button class="btn btn-outline" onclick="toggleColumnMenu()">
-                    <i class="fas fa-columns"></i> Kolom
+                <button class="btn btn-primary" id="btnShowAll" onclick="showAllSaldo()">
+                    <i class="fas fa-list"></i> Tampilkan Semua
                 </button>
+                <button class="btn btn-outline" id="btnHideSmall" onclick="hideSmallSaldo()">
+                    <i class="fas fa-gem"></i> Sembunyikan &lt; 1 Juta
+                </button>
+            </div>
+            <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
+            <button class="btn btn-success" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <div class="column-toggle">
+                <button class="btn btn-outline" onclick="toggleColumnMenu()"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
             </div>
         </div>
-
-        <!-- Table -->
         <div class="table-container">
             <div class="table-header">
                 <h3><i class="fas fa-table"></i> Data Peserta</h3>
@@ -651,686 +259,485 @@
                 </div>
             </div>
             <div style="overflow-x:auto;">
-                <table id="dataTable">
-                    <thead>
-                        <tr id="tableHead"></tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+                <table id="dataTable"><thead><tr id="tableHead"></tr></thead><tbody id="tableBody"></tbody></table>
             </div>
             <div class="empty-state" id="emptyState" style="display:none;">
-                <i class="fas fa-inbox"></i>
-                <h3>Tidak ada data</h3>
-                <p>Data tidak ditemukan atau file CSV belum diupload.</p>
+                <i class="fas fa-inbox"></i><h3>Tidak ada data</h3><p>Data tidak ditemukan atau file CSV belum diupload.</p>
             </div>
             <div class="pagination" id="pagination"></div>
         </div>
     </div>
-
-    <!-- Copy Modal -->
     <div class="modal-overlay" id="copyModal">
         <div class="modal-box">
-            <div class="modal-header">
-                <h3><i class="fas fa-copy"></i> Salin Data</h3>
-                <button class="modal-close" onclick="closeCopyModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="copy-preview" id="copyPreview"></div>
-            </div>
+            <div class="modal-header"><h3><i class="fas fa-copy"></i> Salin Data</h3><button class="modal-close" onclick="closeCopyModal()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body"><div class="copy-preview" id="copyPreview"></div></div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeCopyModal()">Tutup</button>
-                <button class="btn btn-primary" onclick="doCopy()">
-                    <i class="fas fa-copy"></i> Salin ke Clipboard
-                </button>
+                <button class="btn btn-primary" onclick="doCopy()"><i class="fas fa-copy"></i> Salin ke Clipboard</button>
             </div>
         </div>
     </div>
-
-    <!-- Toast -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Loading -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
+    <div class="modal-overlay confirm-modal" id="confirmDeleteModal">
+        <div class="modal-box">
+            <div class="modal-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Konfirmasi Hapus</h3><button class="modal-close" onclick="closeConfirmDelete()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body"><p>Apakah Anda yakin ingin <strong>menghapus semua data</strong> yang tersimpan?<br><br>Tindakan ini tidak dapat dibatalkan. Data akan dihapus dari penyimpanan lokal dan tidak bisa dikembalikan.</p></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeConfirmDelete()">Batal</button>
+                <button class="btn btn-danger" onclick="confirmDeleteAll()"><i class="fas fa-trash-alt"></i> Ya, Hapus Semua</button>
+            </div>
+        </div>
     </div>
-
-    <script>
-        // ===================== DATA & STATE =====================
-        let allData = [];
-        let filteredData = [];
-        let currentPage = 1;
-        let rowsPerPage = 10;
-        let sortCol = null;
-        let sortAsc = true;
-        let searchTerm = '';
-        let filter1M = false;
-        let visibleCols = [];
-        let copyBuffer = '';
-
-        const STORAGE_KEY = 'bpjs_filtered_data_v2';
-
-        // Default data from uploaded CSV (pre-loaded)
-        const defaultData = [
-            {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202072505030002","Nama":"SUPANDI","Tgl Lahir":"25-05-2003","KPJ Input":"","Status Akun":"Terdaftar","Email":"edda72122@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"21041900560","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 311.061,55","Iuran Terakhir":"01 JULI 2021","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202070107870731","Nama":"YADI","Tgl Lahir":"01-07-1988","KPJ Input":"","Status Akun":"Terdaftar","Email":"marymitchellv343@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"22152207563","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 532.252,26","Iuran Terakhir":"01 FEBRUARI 2023","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202070508890002","Nama":"NURDIN","Tgl Lahir":"09-09-1989","KPJ Input":"","Status Akun":"Terdaftar","Email":"jennifercarterh538@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"23013779410","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 5.401.921,28","Iuran Terakhir":"01 OKTOBER 2024","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202072605880001","Nama":"MUSTAKIM","Tgl Lahir":"22-10-1986","KPJ Input":"","Status Akun":"Terdaftar","Email":"omernellisberlin@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"12039376806","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 480.344,45","Iuran Terakhir":"01 DESEMBER 2012","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202073112890089","Nama":"AHMAD MUSTAFA","Tgl Lahir":"31-12-1989","KPJ Input":"","Status Akun":"Terdaftar","Email":"provencewolformond@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"18081934996\n19044948222\n25061686694","Jml Kartu":3,"Status Added":"3/3","Total Saldo":"Rp 3.690.540,11","Iuran Terakhir":"01 MARET 2026","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
-            {"NIK":"5202073112950060","Nama":"HAFIZ RAMDANI","Tgl Lahir":"31-12-1995","KPJ Input":"","Status Akun":"Terdaftar","Email":"pfeiffenbergeworldperfater@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"24061013678","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 1.542.065,41","Iuran Terakhir":"01 DESEMBER 2024","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"}
-        ];
-
-        const colConfig = [
-            { key: 'NIK', label: 'NIK', width: '140px', format: 'nik' },
-            { key: 'Nama', label: 'Nama Lengkap', width: '180px' },
-            { key: 'Tgl Lahir', label: 'Tgl Lahir', width: '110px' },
-            { key: 'Email', label: 'Email', width: '220px' },
-            { key: 'List KPJ (PU)', label: 'No. KPJ', width: '140px' },
-            { key: 'Jml Kartu', label: 'Jml Kartu', width: '90px', align: 'center' },
-            { key: 'Total Saldo', label: 'Total Saldo', width: '140px', format: 'saldo' },
-            { key: 'Iuran Terakhir', label: 'Iuran Terakhir', width: '140px' },
-            { key: 'Status Pengkinian', label: 'Status', width: '160px', format: 'status' },
-            { key: 'Keterangan', label: 'Keterangan', width: '160px' }
-        ];
-
-        // ===================== INIT =====================
-        function init() {
-            visibleCols = colConfig.map(c => c.key);
-
-            // Load from localStorage if available
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        allData = parsed;
-                        showToast('Data dimuat dari penyimpanan lokal', 'success');
-                    } else {
-                        allData = [...defaultData];
-                    }
-                } catch (e) {
-                    allData = [...defaultData];
-                }
-            } else {
-                allData = [...defaultData];
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+<script>
+let allData = [];
+let filteredData = [];
+let currentPage = 1;
+let rowsPerPage = 10;
+let sortCol = null;
+let sortAsc = true;
+let searchTerm = '';
+let filter1M = false;
+let visibleCols = [];
+let copyBuffer = '';
+const STORAGE_KEY = 'bpjs_filtered_data_v6';
+const defaultData = [
+    {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202072505030002","Nama":"SUPANDI","Tgl Lahir":"25-05-2003","KPJ Input":"","Status Akun":"Terdaftar","Email":"edda72122@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"21041900560","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 311.061,55","Iuran Terakhir":"01 JULI 2021","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202070107870731","Nama":"YADI","Tgl Lahir":"01-07-1988","KPJ Input":"","Status Akun":"Terdaftar","Email":"marymitchellv343@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"22152207563","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 532.252,26","Iuran Terakhir":"01 FEBRUARI 2023","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202070508890002","Nama":"NURDIN","Tgl Lahir":"09-09-1989","KPJ Input":"","Status Akun":"Terdaftar","Email":"jennifercarterh538@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"23013779410","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 5.401.921,28","Iuran Terakhir":"01 OKTOBER 2024","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202072605880001","Nama":"MUSTAKIM","Tgl Lahir":"22-10-1986","KPJ Input":"","Status Akun":"Terdaftar","Email":"omernellisberlin@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"12039376806","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 480.344,45","Iuran Terakhir":"01 DESEMBER 2012","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202073112890089","Nama":"AHMAD MUSTAFA","Tgl Lahir":"31-12-1989","KPJ Input":"","Status Akun":"Terdaftar","Email":"provencewolformond@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"18081934996\n19044948222\n25061686694","Jml Kartu":3,"Status Added":"3/3","Total Saldo":"Rp 3.690.540,11","Iuran Terakhir":"01 MARET 2026","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
+    {"NIK":"5202073112950060","Nama":"HAFIZ RAMDANI","Tgl Lahir":"31-12-1995","KPJ Input":"","Status Akun":"Terdaftar","Email":"pfeiffenbergeworldperfater@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"24061013678","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 1.542.065,41","Iuran Terakhir":"01 DESEMBER 2024","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"}
+];
+const colConfig = [
+    { key: 'NIK', label: 'NIK', width: '140px', format: 'nik' },
+    { key: 'Nama', label: 'Nama Lengkap', width: '180px' },
+    { key: 'Tgl Lahir', label: 'Tgl Lahir', width: '110px' },
+    { key: 'Email', label: 'Email', width: '220px' },
+    { key: 'List KPJ (PU)', label: 'No. KPJ', width: '140px' },
+    { key: 'Jml Kartu', label: 'Jml Kartu', width: '90px', align: 'center' },
+    { key: 'Total Saldo', label: 'Total Saldo', width: '140px', format: 'saldo' },
+    { key: 'Iuran Terakhir', label: 'Iuran Terakhir', width: '140px' },
+    { key: 'Status Pengkinian', label: 'Status', width: '160px', format: 'status' },
+    { key: 'Keterangan', label: 'Keterangan', width: '160px' }
+];
+function init() {
+    visibleCols = colConfig.map(c => c.key);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                allData = parsed;
+                showToast("Data dimuat dari penyimpanan lokal", "success");
+            } else { allData = [...defaultData]; }
+        } catch (e) { allData = [...defaultData]; }
+    } else { allData = [...defaultData]; }
+    filter1M = false;
+    document.getElementById("btnShowAll").className = "btn btn-primary";
+    document.getElementById("btnHideSmall").className = "btn btn-outline";
+    applyFilter(); renderColumnMenu(); updateStats();
+}
+function saveToStorage() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); }
+    catch (e) { console.warn("Gagal menyimpan ke localStorage", e); }
+}
+function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return [];
+    const headers = parseLine(lines[0]);
+    const result = [];
+    for (let i = 1; i < lines.length; i++) {
+        const values = parseLine(lines[i]);
+        if (values.length === headers.length) {
+            const obj = {};
+            headers.forEach((h, idx) => obj[h.trim()] = values[idx]);
+            result.push(obj);
+        }
+    }
+    return result;
+}
+function parseLine(line) {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+            else { inQuotes = !inQuotes; }
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim()); current = "";
+        } else { current += char; }
+    }
+    result.push(current.trim());
+    return result;
+}
+function applyFilter() {
+    filteredData = allData.filter(row => {
+        const sp = (row["Status Pengkinian"] || "").trim();
+        const pk = (row["Pesan Pengkinian"] || "").trim();
+        const pcl = (row["Pesan Klaim"] || "").trim();
+        const ket = (row["Keterangan"] || "").trim();
+        const matchCriteria = 
+            sp === "Belum Pengkinian Data" &&
+            pk === "Layak (JHTA000)" &&
+            pcl === "Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)" &&
+            ket === "Klaim dapat melalui JMO";
+        if (!matchCriteria) return false;
+        if (filter1M) {
+            const saldo = parseSaldo(row["Total Saldo"]);
+            if (saldo < 1000000) return false;
+        }
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const searchable = Object.values(row).join(" ").toLowerCase();
+            return searchable.includes(term);
+        }
+        return true;
+    });
+    if (sortCol) {
+        filteredData.sort((a, b) => {
+            let va = a[sortCol] || "";
+            let vb = b[sortCol] || "";
+            if (sortCol === "Total Saldo") {
+                va = parseSaldo(va); vb = parseSaldo(vb);
+                return sortAsc ? va - vb : vb - va;
             }
-
-            applyFilter();
-            renderColumnMenu();
-            updateStats();
-        }
-
-        function saveToStorage() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
-            } catch (e) {
-                console.warn('Gagal menyimpan ke localStorage', e);
+            if (sortCol === "Jml Kartu") {
+                va = parseInt(va) || 0; vb = parseInt(vb) || 0;
+                return sortAsc ? va - vb : vb - va;
             }
+            va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+            if (va < vb) return sortAsc ? -1 : 1;
+            if (va > vb) return sortAsc ? 1 : -1;
+            return 0;
+        });
+    }
+    currentPage = 1;
+    renderTable(); renderPagination(); updateStats();
+}
+function parseSaldo(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+}
+function formatSaldoCopy(str) {
+    if (!str) return "0";
+    return str.replace(/^Rp\s*/, "").trim();
+}
+function renderTable() {
+    const thead = document.getElementById("tableHead");
+    const tbody = document.getElementById("tableBody");
+    const empty = document.getElementById("emptyState");
+    let headHTML = '<th style="width:40px">#</th>';
+    colConfig.forEach(col => {
+        if (!visibleCols.includes(col.key)) return;
+        const sortClass = sortCol === col.key ? (sortAsc ? "sort-asc" : "sort-desc") : "";
+        headHTML += `<th class="${sortClass}" style="width:${col.width}" onclick="sortBy('${col.key}')">${col.label}<span class="sort-icon"><i class="fas fa-sort"></i></span></th>`;
+    });
+    headHTML += '<th style="width:100px">Aksi</th>';
+    thead.innerHTML = headHTML;
+    if (filteredData.length === 0) {
+        tbody.innerHTML = ""; empty.style.display = "block";
+        document.getElementById("countBadge").textContent = "0 data"; return;
+    }
+    empty.style.display = "none";
+    document.getElementById("countBadge").textContent = filteredData.length + " data";
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageData = filteredData.slice(start, end);
+    let html = "";
+    pageData.forEach((row, idx) => {
+        const globalIdx = start + idx;
+        html += `<tr data-index="${globalIdx}">`;
+        html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
+        colConfig.forEach(col => {
+            if (!visibleCols.includes(col.key)) return;
+            let val = row[col.key] || "-";
+            let style = col.align ? `text-align:${col.align}` : "";
+            if (col.format === "nik") html += `<td style="${style}"><span class="nik">${val}</span></td>`;
+            else if (col.format === "saldo") html += `<td style="${style}"><span class="saldo">${val}</span></td>`;
+            else if (col.format === "status") html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
+            else html += `<td style="${style}">${val}</td>`;
+        });
+        html += `<td><button class="btn-copy" onclick="openCopyModal(${globalIdx}, this)" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
+        html += '</tr>';
+        html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 2}"><div class="detail-content">` +
+            renderDetailItem("NIK", row["NIK"]) +
+            renderDetailItem("Nama Lengkap", row["Nama"]) +
+            renderDetailItem("Tanggal Lahir", row["Tgl Lahir"]) +
+            renderDetailItem("Email", row["Email"]) +
+            renderDetailItem("Password", row["Password"]) +
+            renderDetailItem("Status Akun", row["Status Akun"]) +
+            renderDetailItem("No. KPJ", row["List KPJ (PU)"]) +
+            renderDetailItem("Jumlah Kartu", row["Jml Kartu"]) +
+            renderDetailItem("Status Added", row["Status Added"]) +
+            renderDetailItem("Total Saldo", row["Total Saldo"]) +
+            renderDetailItem("Iuran Terakhir", row["Iuran Terakhir"]) +
+            renderDetailItem("Status Pengkinian", row["Status Pengkinian"]) +
+            renderDetailItem("Pesan Pengkinian", row["Pesan Pengkinian"]) +
+            renderDetailItem("Pesan Klaim", row["Pesan Klaim"]) +
+            renderDetailItem("Keterangan", row["Keterangan"]) +
+            '</div></td></tr>';
+    });
+    tbody.innerHTML = html;
+}
+function renderDetailItem(label, value) {
+    return `<div class="detail-item"><div class="label">${label}</div><div class="value">${value || '-'}</div></div>`;
+}
+function renderPagination() {
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const container = document.getElementById("pagination");
+    if (totalPages <= 1) {
+        container.innerHTML = `<div class="page-info">Menampilkan ${filteredData.length} dari ${filteredData.length} data</div>`;
+        return;
+    }
+    let html = `<div class="page-info">Menampilkan ${(currentPage-1)*rowsPerPage + 1} - ${Math.min(currentPage*rowsPerPage, filteredData.length)} dari ${filteredData.length} data</div>`;
+    html += '<div class="page-buttons">';
+    html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            html += '<span style="padding:0 8px;color:var(--text-secondary)">...</span>';
         }
+    }
+    html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+    html += '</div>';
+    container.innerHTML = html;
+}
+function renderColumnMenu() {
+    const menu = document.getElementById("columnMenu");
+    let html = "";
+    colConfig.forEach(col => {
+        const checked = visibleCols.includes(col.key) ? "checked" : "";
+        html += `<label><input type="checkbox" ${checked} onchange="toggleColumn('${col.key}', this.checked)"> ${col.label}</label>`;
+    });
+    menu.innerHTML = html;
+}
+function updateStats() {
+    document.getElementById("statTotal").textContent = filteredData.length;
+    document.getElementById("statWarning").textContent = filteredData.length;
+    let totalSaldo = 0, count1M = 0;
+    filteredData.forEach(row => {
+        const s = parseSaldo(row["Total Saldo"]);
+        totalSaldo += s;
+        if (s >= 1000000) count1M++;
+    });
+    document.getElementById("statSaldo").textContent = formatRupiah(totalSaldo);
+    document.getElementById("stat1M").textContent = count1M;
+    const avg = filteredData.length > 0 ? totalSaldo / filteredData.length : 0;
+    document.getElementById("statAvg").textContent = formatRupiah(avg);
+}
+function formatRupiah(num) {
+    return "Rp " + Math.round(num).toLocaleString("id-ID").replace(/,/g, ".");
+}
+function sortBy(col) {
+    if (sortCol === col) { sortAsc = !sortAsc; }
+    else { sortCol = col; sortAsc = true; }
+    applyFilter();
+}
+function goPage(p) {
+    const total = Math.ceil(filteredData.length / rowsPerPage);
+    if (p < 1 || p > total) return;
+    currentPage = p; renderTable(); renderPagination();
+}
+let searchTimeout;
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        searchTerm = document.getElementById("searchInput").value;
+        applyFilter();
+    }, 300);
+}
+function showAllSaldo() {
+    filter1M = false;
+    document.getElementById("btnShowAll").className = "btn btn-primary";
+    document.getElementById("btnHideSmall").className = "btn btn-outline";
+    showToast("Semua saldo ditampilkan", "success");
+    applyFilter();
+}
 
-        // ===================== CSV PARSER =====================
-        function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            if (lines.length < 2) return [];
-
-            const headers = parseLine(lines[0]);
-            const result = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = parseLine(lines[i]);
-                if (values.length === headers.length) {
-                    const obj = {};
-                    headers.forEach((h, idx) => obj[h.trim()] = values[idx]);
-                    result.push(obj);
-                }
-            }
-            return result;
-        }
-
-        function parseLine(line) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"') {
-                    if (inQuotes && line[i + 1] === '"') {
-                        current += '"';
-                        i++;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
-                } else {
-                    current += char;
-                }
-            }
-            result.push(current.trim());
-            return result;
-        }
-
-        // ===================== FILTER =====================
-        function applyFilter() {
-            // Filter berdasarkan kriteria yang diminta
-            filteredData = allData.filter(row => {
-                const sp = (row['Status Pengkinian'] || '').trim();
-                const pk = (row['Pesan Pengkinian'] || '').trim();
-                const pcl = (row['Pesan Klaim'] || '').trim();
-                const ket = (row['Keterangan'] || '').trim();
-
-                const matchCriteria = 
-                    sp === 'Belum Pengkinian Data' &&
-                    pk === 'Layak (JHTA000)' &&
-                    pcl === 'Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)' &&
-                    ket === 'Klaim dapat melalui JMO';
-
-                if (!matchCriteria) return false;
-
-                // Filter saldo >= 1 juta
-                if (filter1M) {
-                    const saldo = parseSaldo(row['Total Saldo']);
-                    if (saldo < 1000000) return false;
-                }
-
-                // Search
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    const searchable = Object.values(row).join(' ').toLowerCase();
-                    return searchable.includes(term);
-                }
-                return true;
-            });
-
-            // Sort
-            if (sortCol) {
-                filteredData.sort((a, b) => {
-                    let va = a[sortCol] || '';
-                    let vb = b[sortCol] || '';
-
-                    // Numeric sort for saldo
-                    if (sortCol === 'Total Saldo') {
-                        va = parseSaldo(va);
-                        vb = parseSaldo(vb);
-                        return sortAsc ? va - vb : vb - va;
-                    }
-                    // Numeric sort for Jml Kartu
-                    if (sortCol === 'Jml Kartu') {
-                        va = parseInt(va) || 0;
-                        vb = parseInt(vb) || 0;
-                        return sortAsc ? va - vb : vb - va;
-                    }
-
-                    va = String(va).toLowerCase();
-                    vb = String(vb).toLowerCase();
-                    if (va < vb) return sortAsc ? -1 : 1;
-                    if (va > vb) return sortAsc ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            currentPage = 1;
-            renderTable();
-            renderPagination();
-            updateStats();
-        }
-
-        function parseSaldo(str) {
-            if (!str) return 0;
-            return parseFloat(str.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-        }
-
-        function formatSaldoCopy(str) {
-            // Convert "Rp 5.401.921,28" to "5.401.921,28"
-            if (!str) return '0';
-            return str.replace(/^Rp\s*/, '').trim();
-        }
-
-        // ===================== RENDER =====================
-        function renderTable() {
-            const thead = document.getElementById('tableHead');
-            const tbody = document.getElementById('tableBody');
-            const empty = document.getElementById('emptyState');
-
-            // Render headers
-            let headHTML = '<th style="width:40px">#</th>';
-            colConfig.forEach(col => {
-                if (!visibleCols.includes(col.key)) return;
-                const sortClass = sortCol === col.key ? (sortAsc ? 'sort-asc' : 'sort-desc') : '';
-                headHTML += `<th class="${sortClass}" style="width:${col.width}" onclick="sortBy('${col.key}')">
-                    ${col.label}<span class="sort-icon"><i class="fas fa-sort"></i></span>
-                </th>`;
-            });
-            headHTML += '<th style="width:100px">Aksi</th>';
-            thead.innerHTML = headHTML;
-
-            if (filteredData.length === 0) {
-                tbody.innerHTML = '';
-                empty.style.display = 'block';
-                document.getElementById('countBadge').textContent = '0 data';
-                return;
-            }
-
-            empty.style.display = 'none';
-            document.getElementById('countBadge').textContent = filteredData.length + ' data';
-
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const pageData = filteredData.slice(start, end);
-
-            let html = '';
-            pageData.forEach((row, idx) => {
-                const globalIdx = start + idx;
-                html += `<tr data-index="${globalIdx}">`;
-                html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
-
-                colConfig.forEach(col => {
-                    if (!visibleCols.includes(col.key)) return;
-                    let val = row[col.key] || '-';
-                    let style = col.align ? `text-align:${col.align}` : '';
-
-                    if (col.format === 'nik') {
-                        html += `<td style="${style}"><span class="nik">${val}</span></td>`;
-                    } else if (col.format === 'saldo') {
-                        html += `<td style="${style}"><span class="saldo">${val}</span></td>`;
-                    } else if (col.format === 'status') {
-                        html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
-                    } else {
-                        html += `<td style="${style}">${val}</td>`;
-                    }
-                });
-
-                html += `<td><button class="btn-copy" onclick="openCopyModal(${globalIdx}, this)" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
-                html += '</tr>';
-
-                // Detail row
-                html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 2}">
-                    <div class="detail-content">
-                        ${renderDetailItem('NIK', row['NIK'])}
-                        ${renderDetailItem('Nama Lengkap', row['Nama'])}
-                        ${renderDetailItem('Tanggal Lahir', row['Tgl Lahir'])}
-                        ${renderDetailItem('Email', row['Email'])}
-                        ${renderDetailItem('Password', row['Password'])}
-                        ${renderDetailItem('Status Akun', row['Status Akun'])}
-                        ${renderDetailItem('No. KPJ', row['List KPJ (PU)'])}
-                        ${renderDetailItem('Jumlah Kartu', row['Jml Kartu'])}
-                        ${renderDetailItem('Status Added', row['Status Added'])}
-                        ${renderDetailItem('Total Saldo', row['Total Saldo'])}
-                        ${renderDetailItem('Iuran Terakhir', row['Iuran Terakhir'])}
-                        ${renderDetailItem('Status Pengkinian', row['Status Pengkinian'])}
-                        ${renderDetailItem('Pesan Pengkinian', row['Pesan Pengkinian'])}
-                        ${renderDetailItem('Pesan Klaim', row['Pesan Klaim'])}
-                        ${renderDetailItem('Keterangan', row['Keterangan'])}
-                    </div>
-                </td></tr>`;
-            });
-
-            tbody.innerHTML = html;
-        }
-
-        function renderDetailItem(label, value) {
-            return `<div class="detail-item">
-                <div class="label">${label}</div>
-                <div class="value">${value || '-'}</div>
-            </div>`;
-        }
-
-        function renderPagination() {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            const container = document.getElementById('pagination');
-
-            if (totalPages <= 1) {
-                container.innerHTML = `<div class="page-info">Menampilkan ${filteredData.length} dari ${filteredData.length} data</div>`;
-                return;
-            }
-
-            let html = `<div class="page-info">Menampilkan ${(currentPage-1)*rowsPerPage + 1} - ${Math.min(currentPage*rowsPerPage, filteredData.length)} dari ${filteredData.length} data</div>`;
-            html += '<div class="page-buttons">';
-
-            html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
-
-            for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
-                } else if (i === currentPage - 2 || i === currentPage + 2) {
-                    html += `<span style="padding:0 8px;color:var(--text-secondary)">...</span>`;
-                }
-            }
-
-            html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
-            html += '</div>';
-
-            container.innerHTML = html;
-        }
-
-        function renderColumnMenu() {
-            const menu = document.getElementById('columnMenu');
-            let html = '';
-            colConfig.forEach(col => {
-                const checked = visibleCols.includes(col.key) ? 'checked' : '';
-                html += `<label><input type="checkbox" ${checked} onchange="toggleColumn('${col.key}', this.checked)"> ${col.label}</label>`;
-            });
-            menu.innerHTML = html;
-        }
-
-        // ===================== STATS =====================
-        function updateStats() {
-            document.getElementById('statTotal').textContent = filteredData.length;
-            document.getElementById('statWarning').textContent = filteredData.length;
-
-            let totalSaldo = 0;
-            let count1M = 0;
-            filteredData.forEach(row => {
-                const s = parseSaldo(row['Total Saldo']);
-                totalSaldo += s;
-                if (s >= 1000000) count1M++;
-            });
-
-            document.getElementById('statSaldo').textContent = formatRupiah(totalSaldo);
-            document.getElementById('stat1M').textContent = count1M;
-            const avg = filteredData.length > 0 ? totalSaldo / filteredData.length : 0;
-            document.getElementById('statAvg').textContent = formatRupiah(avg);
-        }
-
-        function formatRupiah(num) {
-            return 'Rp ' + Math.round(num).toLocaleString('id-ID').replace(/,/g, '.');
-        }
-
-        // ===================== INTERACTIONS =====================
-        function sortBy(col) {
-            if (sortCol === col) {
-                sortAsc = !sortAsc;
-            } else {
-                sortCol = col;
-                sortAsc = true;
-            }
-            applyFilter();
-        }
-
-        function goPage(p) {
-            const total = Math.ceil(filteredData.length / rowsPerPage);
-            if (p < 1 || p > total) return;
-            currentPage = p;
-            renderTable();
-            renderPagination();
-        }
-
-        function toggleDetail(idx, btn) {
-            const row = document.getElementById(`detail-${idx}`);
-            const isActive = row.classList.contains('active');
-
-            // Close all
-            document.querySelectorAll('.detail-row').forEach(r => r.classList.remove('active'));
-            document.querySelectorAll('.expand-btn').forEach(b => b.classList.remove('active'));
-
-            if (!isActive) {
-                row.classList.add('active');
-                btn.classList.add('active');
-            }
-        }
-
-        let searchTimeout;
-        function debounceSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchTerm = document.getElementById('searchInput').value;
-                applyFilter();
-            }, 300);
-        }
-
-        function toggleFilter1M() {
-            filter1M = !filter1M;
-            const toggle = document.getElementById('filter1MToggle');
-            const check = document.getElementById('filter1MCheck');
-            if (filter1M) {
-                toggle.classList.add('active');
-                check.checked = true;
-            } else {
-                toggle.classList.remove('active');
-                check.checked = false;
-            }
-            applyFilter();
-        }
-
-        function toggleColumn(key, visible) {
-            if (visible) {
-                if (!visibleCols.includes(key)) visibleCols.push(key);
-            } else {
-                visibleCols = visibleCols.filter(c => c !== key);
-            }
-            // Preserve order
-            const ordered = [];
-            colConfig.forEach(c => { if (visibleCols.includes(c.key)) ordered.push(c.key); });
-            visibleCols = ordered;
-            renderTable();
-        }
-
-        function toggleColumnMenu() {
-            document.getElementById('columnMenu').classList.toggle('show');
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.column-toggle')) {
-                document.getElementById('columnMenu').classList.remove('show');
+function hideSmallSaldo() {
+    filter1M = true;
+    document.getElementById("btnShowAll").className = "btn btn-outline";
+    document.getElementById("btnHideSmall").className = "btn btn-primary";
+    showToast("Saldo di bawah 1 juta disembunyikan", "success");
+    applyFilter();
+}
+function toggleColumn(key, visible) {
+    if (visible) { if (!visibleCols.includes(key)) visibleCols.push(key); }
+    else { visibleCols = visibleCols.filter(c => c !== key); }
+    const ordered = [];
+    colConfig.forEach(c => { if (visibleCols.includes(c.key)) ordered.push(c.key); });
+    visibleCols = ordered; renderTable();
+}
+function toggleColumnMenu() {
+    document.getElementById("columnMenu").classList.toggle("show");
+}
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".column-toggle")) {
+        document.getElementById("columnMenu").classList.remove("show");
+    }
+});
+function openConfirmDelete() {
+    document.getElementById("confirmDeleteModal").classList.add("active");
+}
+function closeConfirmDelete() {
+    document.getElementById("confirmDeleteModal").classList.remove("active");
+}
+function confirmDeleteAll() {
+    allData = []; localStorage.removeItem(STORAGE_KEY);
+    closeConfirmDelete(); applyFilter(); updateStats();
+    showToast("Semua data berhasil dihapus", "success");
+}
+function buildCopyText(row, index) {
+    const jmlKartu = parseInt(row["Jml Kartu"]) || 0;
+    const tunggalSensor = jmlKartu === 1 ? "TUNGGAL" : "SENSOR";
+    const saldo = formatSaldoCopy(row["Total Saldo"]);
+    const kpj = (row["List KPJ (PU)"] || "").replace(/\\n/g, "\n");
+    return `${index + 1}.\n\n${row["NIK"] || ""}\t\n${row["Tgl Lahir"] || ""}\n\n${tunggalSensor}\n${saldo}\nPERUSAHAAN \nN/A 01- \n\n${row["Email"] || ""}\n${row["Password"] || ""}\n${kpj}\n${row["Nama"] || ""}`;
+}
+function openCopyModal(idx, btn) {
+    const row = filteredData[idx];
+    if (!row) return;
+    copyBuffer = buildCopyText(row, idx);
+    document.getElementById("copyPreview").textContent = copyBuffer;
+    document.getElementById("copyModal").classList.add("active");
+}
+function closeCopyModal() {
+    document.getElementById("copyModal").classList.remove("active");
+}
+function doCopy() {
+    navigator.clipboard.writeText(copyBuffer).then(() => {
+        showToast("Data berhasil disalin ke clipboard!", "success");
+        closeCopyModal();
+    }).catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = copyBuffer;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast("Data berhasil disalin ke clipboard!", "success");
+        closeCopyModal();
+    });
+}
+function handleFile(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    processFiles(files);
+}
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove("dragover");
+    const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith(".csv"));
+    if (files.length === 0) { showToast("Harap upload file CSV", "error"); return; }
+    processFiles(files);
+}
+function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add("dragover"); }
+function handleDragLeave(e) { e.currentTarget.classList.remove("dragover"); }
+function processFiles(files) {
+    showLoading(true);
+    let allParsed = [];
+    let processed = 0;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try { const parsed = parseCSV(e.target.result); allParsed = allParsed.concat(parsed); }
+            catch (err) { console.error("Error parsing", file.name, err); }
+            processed++;
+            if (processed === files.length) { finishProcessFiles(allParsed, files.length); }
+        };
+        reader.readAsText(file);
+    });
+}
+function finishProcessFiles(allParsed, fileCount) {
+    showLoading(false);
+    if (allParsed.length > 0) {
+        const existingNik = new Set(allData.map(d => d["NIK"]));
+        let added = 0;
+        const newRows = [];
+        allParsed.forEach(row => {
+            if (!existingNik.has(row["NIK"])) {
+                newRows.push(row);
+                existingNik.add(row["NIK"]);
+                added++;
             }
         });
-
-        // ===================== COPY FORMAT =====================
-        function buildCopyText(row, index) {
-            const jmlKartu = parseInt(row['Jml Kartu']) || 0;
-            const tunggalSensor = jmlKartu === 1 ? 'TUNGGAL' : 'SENSOR';
-            const saldo = formatSaldoCopy(row['Total Saldo']);
-            const kpj = (row['List KPJ (PU)'] || '').replace(/\n/g, '\n');
-
-            return `${index + 1}.
-
-${row['NIK'] || ''}	
-${row['Tgl Lahir'] || ''}
-
-${tunggalSensor}
-${saldo}
-PERUSAHAAN 
-N/A 01- 
-
-${row['Email'] || ''}
-${row['Password'] || ''}
-${kpj}
-${row['Nama'] || ''}`;
-        }
-
-        function openCopyModal(idx, btn) {
-            const row = filteredData[idx];
-            if (!row) return;
-
-            copyBuffer = buildCopyText(row, idx);
-            document.getElementById('copyPreview').textContent = copyBuffer;
-            document.getElementById('copyModal').classList.add('active');
-        }
-
-        function closeCopyModal() {
-            document.getElementById('copyModal').classList.remove('active');
-        }
-
-        function doCopy() {
-            navigator.clipboard.writeText(copyBuffer).then(() => {
-                showToast('Data berhasil disalin ke clipboard!', 'success');
-                closeCopyModal();
-            }).catch(() => {
-                // Fallback
-                const ta = document.createElement('textarea');
-                ta.value = copyBuffer;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                showToast('Data berhasil disalin ke clipboard!', 'success');
-                closeCopyModal();
-            });
-        }
-
-        // ===================== FILE HANDLING (MULTIPLE) =====================
-        function handleFile(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            processFiles(files);
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('dragover');
-            const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
-            if (files.length === 0) {
-                showToast('Harap upload file CSV', 'error');
-                return;
-            }
-            processFiles(files);
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('dragover');
-        }
-
-        function handleDragLeave(e) {
-            e.currentTarget.classList.remove('dragover');
-        }
-
-        function processFiles(files) {
-            showLoading(true);
-            let allParsed = [];
-            let processed = 0;
-
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const parsed = parseCSV(e.target.result);
-                        allParsed = allParsed.concat(parsed);
-                    } catch (err) {
-                        console.error('Error parsing', file.name, err);
-                    }
-                    processed++;
-                    if (processed === files.length) {
-                        finishProcessFiles(allParsed, files.length);
-                    }
-                };
-                reader.readAsText(file);
-            });
-        }
-
-        function finishProcessFiles(allParsed, fileCount) {
-            showLoading(false);
-            if (allParsed.length > 0) {
-                // Merge with existing, avoid duplicates by NIK
-                const existingNik = new Set(allData.map(d => d['NIK']));
-                let added = 0;
-                allParsed.forEach(row => {
-                    if (!existingNik.has(row['NIK'])) {
-                        allData.push(row);
-                        existingNik.add(row['NIK']);
-                        added++;
-                    }
-                });
-                saveToStorage();
-                applyFilter();
-                showToast(`Berhasil memuat ${allParsed.length} baris dari ${fileCount} file (${added} data baru)`, 'success');
-            } else {
-                showToast('File CSV kosong atau format tidak valid', 'error');
-            }
-        }
-
-        // ===================== EXPORT =====================
-        function exportCSV() {
-            if (filteredData.length === 0) {
-                showToast('Tidak ada data untuk diexport', 'error');
-                return;
-            }
-            const headers = Object.keys(filteredData[0]);
-            let csv = headers.join(',') + '\n';
-            filteredData.forEach(row => {
-                csv += headers.map(h => {
-                    let val = row[h] || '';
-                    if (val.includes(',') || val.includes('"')) {
-                        val = '"' + val.replace(/"/g, '""') + '"';
-                    }
-                    return val;
-                }).join(',') + '\n';
-            });
-
-            downloadFile(csv, 'filtered_bpjs_data.csv', 'text/csv');
-            showToast('CSV berhasil diexport!', 'success');
-        }
-
-        function exportExcel() {
-            if (filteredData.length === 0) {
-                showToast('Tidak ada data untuk diexport', 'error');
-                return;
-            }
-            const headers = Object.keys(filteredData[0]);
-            let html = '<table><thead><tr>';
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += '</tr></thead><tbody>';
-            filteredData.forEach(row => {
-                html += '<tr>';
-                headers.forEach(h => html += `<td>${row[h] || ''}</td>`);
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-
-            const blob = new Blob([
-                '\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>' + html + '</body></html>'
-            ], { type: 'application/vnd.ms-excel' });
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'filtered_bpjs_data.xls';
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Excel berhasil diexport!', 'success');
-        }
-
-        function downloadFile(content, filename, type) {
-            const blob = new Blob([content], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // ===================== UI HELPERS =====================
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-            toast.innerHTML = `<i class="fas ${icon}" style="font-size:1.2rem;color:var(--${type})"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        function showLoading(show) {
-            document.getElementById('loadingOverlay').classList.toggle('active', show);
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.getAttribute('data-theme') === 'dark') {
-                html.removeAttribute('data-theme');
-                icon.className = 'fas fa-moon';
-            } else {
-                html.setAttribute('data-theme', 'dark');
-                icon.className = 'fas fa-sun';
-            }
-        }
-
-        // ===================== START =====================
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+        allData = newRows.concat(allData);
+        saveToStorage();
+        applyFilter();
+        showToast(`Berhasil memuat ${allParsed.length} baris dari ${fileCount} file (${added} data baru di atas)`, "success");
+    } else {
+        showToast("File CSV kosong atau format tidak valid", "error");
+    }
+}
+function exportCSV() {
+    if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
+    const headers = Object.keys(filteredData[0]);
+    let csv = headers.join(",") + "\n";
+    filteredData.forEach(row => {
+        csv += headers.map(h => {
+            let val = row[h] || "";
+            if (val.includes(",") || val.includes('"')) { val = '"' + val.replace(/"/g, '""') + '"'; }
+            return val;
+        }).join(",") + "\n";
+    });
+    downloadFile(csv, "filtered_bpjs_data.csv", "text/csv");
+    showToast("CSV berhasil diexport!", "success");
+}
+function exportExcel() {
+    if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
+    const headers = Object.keys(filteredData[0]);
+    let html = "<table><thead><tr>";
+    headers.forEach(h => html += `<th>${h}</th>`);
+    html += "</tr></thead><tbody>";
+    filteredData.forEach(row => {
+        html += "<tr>";
+        headers.forEach(h => html += `<td>${row[h] || ''}</td>`);
+        html += "</tr>";
+    });
+    html += "</tbody></table>";
+    const blob = new Blob([`\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>${html}</body></html>`], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "filtered_bpjs_data.xls"; a.click();
+    URL.revokeObjectURL(url);
+    showToast("Excel berhasil diexport!", "success");
+}
+function downloadFile(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+function showToast(message, type) {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    const icon = type === "success" ? "fa-check-circle" : "fa-exclamation-circle";
+    toast.innerHTML = `<i class="fas ${icon}" style="font-size:1.2rem;color:var(--${type})"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+function showLoading(show) {
+    document.getElementById("loadingOverlay").classList.toggle("active", show);
+}
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById("themeIcon");
+    if (html.getAttribute("data-theme") === "dark") {
+        html.removeAttribute("data-theme");
+        icon.className = "fas fa-moon";
+    } else {
+        html.setAttribute("data-theme", "dark");
+        icon.className = "fas fa-sun";
+    }
+}
+window.addEventListener("DOMContentLoaded", init);
+</script>
 </body>
 </html>
