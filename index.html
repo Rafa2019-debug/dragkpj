@@ -607,6 +607,8 @@ function buildCopyText(row, index) {
     const kpj = (row["List KPJ (PU)"] || "").replace(/\\n/g, "\n");
     const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
     return [
+        `${index + 1}.`,
+        "",
         field("NIK", row["NIK"] || ""),
         field("JK", "isimanual"),
         field("LAHIR", row["Tgl Lahir"] || ""),
