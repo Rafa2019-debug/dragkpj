@@ -605,7 +605,21 @@ function buildCopyText(row, index) {
     const tunggalSensor = jmlKartu === 1 ? "TUNGGAL" : "SENSOR";
     const saldo = formatSaldoCopy(row["Total Saldo"]);
     const kpj = (row["List KPJ (PU)"] || "").replace(/\\n/g, "\n");
-    return `${index + 1}.\n\n${row["NIK"] || ""}\t\n${row["Tgl Lahir"] || ""}\n\n${tunggalSensor}\n${saldo}\nPERUSAHAAN \nN/A 01- \n\n${row["Email"] || ""}\n${row["Password"] || ""}\n${kpj}\n${row["Nama"] || ""}`;
+    const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
+    return [
+        field("NIK", row["NIK"] || ""),
+        field("JK", "isimanual"),
+        field("LAHIR", row["Tgl Lahir"] || ""),
+        "",
+        tunggalSensor,
+        field("KERJA", "isimanual"),
+        field("SALDO", saldo),
+        field("N/A", "isimanual"),
+        field("KPJ", kpj),
+        field("NAMA", row["Nama"] || ""),
+        field("EMAIL", row["Email"] || ""),
+        field("PW", row["Password"] || "")
+    ].join("\n");
 }
 function openCopyModal(idx, btn) {
     const row = filteredData[idx];
