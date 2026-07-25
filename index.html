@@ -132,6 +132,9 @@
         td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text); }
         tr:hover td { background: rgba(37,99,235,0.03); }
         tr:last-child td { border-bottom: none; }
+        tr.row-new td { background: rgba(16,185,129,0.14) !important; }
+        tr.row-new:hover td { background: rgba(16,185,129,0.22) !important; }
+        tr.row-new .nik::after { content: "BARU"; margin-left: 8px; font-size: 0.65rem; font-weight: 700; background: var(--success); color: #fff; padding: 2px 6px; border-radius: 6px; vertical-align: middle; }
         .nik { font-family: monospace; font-weight: 600; color: var(--primary); }
         .saldo { font-weight: 700; color: var(--success); }
         .status-pill {
@@ -300,6 +303,7 @@ let searchTerm = '';
 let filter1M = false;
 let visibleCols = [];
 let copyBuffer = '';
+let newlyUploadedNiks = new Set();
 const STORAGE_KEY = 'bpjs_filtered_data_v6';
 const defaultData = [
     {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
@@ -374,17 +378,20 @@ function parseLine(line) {
     result.push(current.trim());
     return result;
 }
+function normStr(s) {
+    return (s || "").toString().replace(/\s+/g, " ").trim().toLowerCase();
+}
 function applyFilter() {
     filteredData = allData.filter(row => {
-        const sp = (row["Status Pengkinian"] || "").trim();
-        const pk = (row["Pesan Pengkinian"] || "").trim();
-        const pcl = (row["Pesan Klaim"] || "").trim();
-        const ket = (row["Keterangan"] || "").trim();
-        const matchCriteria = 
-            sp === "Belum Pengkinian Data" &&
-            pk === "Layak (JHTA000)" &&
-            pcl === "Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)" &&
-            ket === "Klaim dapat melalui JMO";
+        const sp = normStr(row["Status Pengkinian"]);
+        const pk = normStr(row["Pesan Pengkinian"]);
+        const pcl = normStr(row["Pesan Klaim"]);
+        const ket = normStr(row["Keterangan"]);
+        const matchCriteria =
+            sp.includes("belum pengkinian data") &&
+            pk.includes("layak") && pk.includes("jhta000") &&
+            pcl.includes("tidak dapat dilanjutkan") && pcl.includes("pengkinian data") &&
+            ket.includes("jmo");
         if (!matchCriteria) return false;
         if (filter1M) {
             const saldo = parseSaldo(row["Total Saldo"]);
@@ -450,7 +457,8 @@ function renderTable() {
     let html = "";
     pageData.forEach((row, idx) => {
         const globalIdx = start + idx;
-        html += `<tr data-index="${globalIdx}">`;
+        const isNew = newlyUploadedNiks.has(row["NIK"]);
+        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''}">`;
         html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
         colConfig.forEach(col => {
             if (!visibleCols.includes(col.key)) return;
@@ -588,7 +596,7 @@ function closeConfirmDelete() {
     document.getElementById("confirmDeleteModal").classList.remove("active");
 }
 function confirmDeleteAll() {
-    allData = []; localStorage.removeItem(STORAGE_KEY);
+    allData = []; newlyUploadedNiks.clear(); localStorage.removeItem(STORAGE_KEY);
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
@@ -667,6 +675,7 @@ function finishProcessFiles(allParsed, fileCount) {
             }
         });
         allData = newRows.concat(allData);
+        newlyUploadedNiks = new Set(newRows.map(r => r["NIK"]));
         saveToStorage();
         applyFilter();
         showToast(`Berhasil memuat ${allParsed.length} baris dari ${fileCount} file (${added} data baru di atas)`, "success");
