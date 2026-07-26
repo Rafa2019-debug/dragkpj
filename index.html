@@ -348,34 +348,54 @@ function saveToStorage() {
     catch (e) { console.warn("Gagal menyimpan ke localStorage", e); }
 }
 function parseCSV(text) {
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) return [];
-    const headers = parseLine(lines[0]);
+    const rows = [];
+    let currentRow = [];
+    let currentField = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            currentRow.push(currentField.trim());
+            currentField = "";
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            if (currentField !== "" || currentRow.length > 0) {
+                currentRow.push(currentField.trim());
+                rows.push(currentRow);
+                currentRow = [];
+                currentField = "";
+            }
+            if (char === '\r' && nextChar === '\n') i++;
+        } else {
+            currentField += char;
+        }
+    }
+
+    if (currentField !== "" || currentRow.length > 0) {
+        currentRow.push(currentField.trim());
+        rows.push(currentRow);
+    }
+
+    if (rows.length < 2) return [];
+
+    const headers = rows[0];
     const result = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = parseLine(lines[i]);
-        if (values.length === headers.length) {
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i].length === headers.length) {
             const obj = {};
-            headers.forEach((h, idx) => obj[h.trim()] = values[idx]);
+            headers.forEach((h, idx) => obj[h.trim()] = rows[i][idx]);
             result.push(obj);
         }
     }
-    return result;
-}
-function parseLine(line) {
-    const result = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-            else { inQuotes = !inQuotes; }
-        } else if (char === ',' && !inQuotes) {
-            result.push(current.trim()); current = "";
-        } else { current += char; }
-    }
-    result.push(current.trim());
     return result;
 }
 function normStr(s) {
