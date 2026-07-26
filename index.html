@@ -270,22 +270,7 @@
             <div class="pagination" id="pagination"></div>
         </div>
     </div>
-    <div class="modal-overlay" id="copyModal">
-        <div class="modal-box">
-            <div class="modal-header"><h3><i class="fas fa-copy"></i> Salin Data</h3><button class="modal-close" onclick="closeCopyModal()"><i class="fas fa-times"></i></button></div>
-            <div class="modal-body">
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;"><i class="fas fa-tags"></i> Pilih Label yang Ditampilkan:</div>
-                    <div id="copyLabelToggles" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-                </div>
-                <div class="copy-preview" id="copyPreview"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeCopyModal()">Tutup</button>
-                <button class="btn btn-primary" onclick="doCopy()"><i class="fas fa-copy"></i> Salin ke Clipboard</button>
-            </div>
-        </div>
-    </div>
+    
     <div class="modal-overlay confirm-modal" id="confirmDeleteModal">
         <div class="modal-box">
             <div class="modal-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Konfirmasi Hapus</h3><button class="modal-close" onclick="closeConfirmDelete()"><i class="fas fa-times"></i></button></div>
@@ -332,20 +317,7 @@ const colConfig = [
     { key: 'Status Pengkinian', label: 'Status', width: '160px', format: 'status' },
     { key: 'Keterangan', label: 'Keterangan', width: '160px' }
 ];
-const copyLabelConfig = [
-    { key: 'NIK', label: 'NIK', default: true },
-    { key: 'JK', label: 'JK', default: true },
-    { key: 'LAHIR', label: 'LAHIR', default: true },
-    { key: 'TUNGGAL', label: 'Tunggal/Sensor', default: true },
-    { key: 'KERJA', label: 'KERJA', default: true },
-    { key: 'SALDO', label: 'SALDO', default: true },
-    { key: 'NA', label: 'N/A', default: true },
-    { key: 'KPJ', label: 'KPJ', default: true },
-    { key: 'NAMA', label: 'NAMA', default: true },
-    { key: 'EMAIL', label: 'EMAIL', default: true },
-    { key: 'PW', label: 'PW', default: true }
-];
-const COPY_LABEL_KEY = 'bpjs_copy_labels_v1';
+
 function init() {
     visibleCols = colConfig.map(c => c.key);
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -509,7 +481,7 @@ function renderTable() {
             else if (col.format === "status") html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
             else html += `<td style="${style}">${val}</td>`;
         });
-        html += `<td><button class="btn-copy" onclick="openCopyModal(${globalIdx}, this)" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
+        html += `<td><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
         html += '</tr>';
         html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 2}"><div class="detail-content">` +
             renderDetailItem("NIK", row["NIK"]) +
@@ -662,21 +634,7 @@ function detectGenderFromNik(nik) {
     return tgl >= 40 ? "P" : "L";
 }
 
-function getActiveCopyLabels() {
-    const saved = localStorage.getItem(COPY_LABEL_KEY);
-    if (saved) {
-        try { return JSON.parse(saved); }
-        catch (e) { return copyLabelConfig.map(c => c.key); }
-    }
-    return copyLabelConfig.filter(c => c.default).map(c => c.key);
-}
-
-function saveCopyLabels(activeKeys) {
-    localStorage.setItem(COPY_LABEL_KEY, JSON.stringify(activeKeys));
-}
-
-function buildCopyText(row, index, activeLabels) {
-    activeLabels = activeLabels || getActiveCopyLabels();
+function buildCopyText(row, index) {
     const jmlKartu = parseInt(row["Jml Kartu"]) || 0;
     const tunggalSensor = jmlKartu === 1 ? "TUNGGAL" : "SENSOR";
     const saldo = formatSaldoCopy(row["Total Saldo"]);
@@ -684,80 +642,37 @@ function buildCopyText(row, index, activeLabels) {
     const iuranDate = convertIuranToDate(row["Iuran Terakhir"] || "");
     const jk = detectGenderFromNik(row["NIK"]);
     const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
-
-    const lines = [`${index + 1}.`, ""];
-    if (activeLabels.includes("NIK")) lines.push(field("NIK", row["NIK"] || ""));
-    if (activeLabels.includes("JK")) lines.push(field("JK", jk));
-    if (activeLabels.includes("LAHIR")) lines.push(field("LAHIR", row["Tgl Lahir"] || ""));
-    if (activeLabels.includes("TUNGGAL")) lines.push("", tunggalSensor);
-    if (activeLabels.includes("KERJA")) lines.push(field("KERJA", "isimanual"));
-    if (activeLabels.includes("SALDO")) lines.push(field("SALDO", saldo));
-    if (activeLabels.includes("NA")) lines.push(field("N/A", iuranDate));
-    if (activeLabels.includes("KPJ")) lines.push(field("KPJ", kpj));
-    if (activeLabels.includes("NAMA")) lines.push(field("NAMA", row["Nama"] || ""));
-    if (activeLabels.includes("EMAIL")) lines.push(field("EMAIL", row["Email"] || ""));
-    if (activeLabels.includes("PW")) lines.push(field("PW", row["Password"] || ""));
-
-    return lines.join("\n");
+    return [
+        `${index + 1}.`,
+        "",
+        field("NIK", row["NIK"] || ""),
+        field("JK", jk),
+        field("LAHIR", row["Tgl Lahir"] || ""),
+        "",
+        tunggalSensor,
+        field("KERJA", "isimanual"),
+        field("SALDO", saldo),
+        field("N/A", iuranDate),
+        field("KPJ", kpj),
+        field("NAMA", row["Nama"] || ""),
+        field("EMAIL", row["Email"] || ""),
+        field("PW", row["Password"] || "")
+    ].join("\n");
 }
-let currentCopyRow = null;
-let currentCopyIndex = 0;
-
-function renderCopyLabelToggles() {
-    const container = document.getElementById("copyLabelToggles");
-    const active = getActiveCopyLabels();
-    let html = "";
-    copyLabelConfig.forEach(cfg => {
-        const isActive = active.includes(cfg.key);
-        html += `<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.82rem;transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--primary)'" onmouseleave="this.style.borderColor='var(--border)'">`;
-        html += `<input type="checkbox" ${isActive ? "checked" : ""} onchange="toggleCopyLabel('${cfg.key}', this.checked)" style="accent-color:var(--primary);width:16px;height:16px;cursor:pointer;">`;
-        html += `<span>${cfg.label}</span>`;
-        html += `</label>`;
-    });
-    container.innerHTML = html;
-}
-
-function toggleCopyLabel(key, checked) {
-    let active = getActiveCopyLabels();
-    if (checked) {
-        if (!active.includes(key)) active.push(key);
-    } else {
-        active = active.filter(k => k !== key);
-    }
-    saveCopyLabels(active);
-    if (currentCopyRow) {
-        copyBuffer = buildCopyText(currentCopyRow, currentCopyIndex, active);
-        document.getElementById("copyPreview").textContent = copyBuffer;
-    }
-}
-
-function openCopyModal(idx, btn) {
+function quickCopy(idx) {
     const row = filteredData[idx];
     if (!row) return;
-    currentCopyRow = row;
-    currentCopyIndex = idx;
-    renderCopyLabelToggles();
-    copyBuffer = buildCopyText(row, idx);
-    document.getElementById("copyPreview").textContent = copyBuffer;
-    document.getElementById("copyModal").classList.add("active");
-}
-function closeCopyModal() {
-    document.getElementById("copyModal").classList.remove("active");
-    currentCopyRow = null;
-}
-function doCopy() {
-    navigator.clipboard.writeText(copyBuffer).then(() => {
-        showToast("Data berhasil disalin ke clipboard!", "success");
-        closeCopyModal();
+    const text = buildCopyText(row, idx);
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
     }).catch(() => {
         const ta = document.createElement("textarea");
-        ta.value = copyBuffer;
+        ta.value = text;
         document.body.appendChild(ta);
         ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
-        showToast("Data berhasil disalin ke clipboard!", "success");
-        closeCopyModal();
+        showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
     });
 }
 function handleFile(e) {
