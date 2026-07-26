@@ -620,23 +620,47 @@ function confirmDeleteAll() {
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
+function convertIuranToDate(str) {
+    if (!str) return "-";
+    const bulanMap = {
+        "JANUARI": "01", "FEBRUARI": "02", "MARET": "03", "APRIL": "04",
+        "MEI": "05", "JUNI": "06", "JULI": "07", "AGUSTUS": "08",
+        "SEPTEMBER": "09", "OKTOBER": "10", "NOVEMBER": "11", "DESEMBER": "12"
+    };
+    const parts = str.trim().split(/\s+/);
+    if (parts.length !== 3) return str;
+    const [tgl, bln, thn] = parts;
+    const bulanNum = bulanMap[bln.toUpperCase()];
+    if (!bulanNum) return str;
+    return `${tgl.padStart(2, "0")}-${bulanNum}-${thn}`;
+}
+
+function detectGenderFromNik(nik) {
+    if (!nik || nik.length < 8) return "L";
+    const tgl = parseInt(nik.substring(6, 8), 10);
+    if (isNaN(tgl)) return "L";
+    return tgl >= 40 ? "P" : "L";
+}
+
 function buildCopyText(row, index) {
     const jmlKartu = parseInt(row["Jml Kartu"]) || 0;
     const tunggalSensor = jmlKartu === 1 ? "TUNGGAL" : "SENSOR";
     const saldo = formatSaldoCopy(row["Total Saldo"]);
     const kpj = (row["List KPJ (PU)"] || "").replace(/\\n/g, "\n");
+    const iuranDate = convertIuranToDate(row["Iuran Terakhir"] || "");
+    const jk = detectGenderFromNik(row["NIK"]);
     const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
     return [
         `${index + 1}.`,
         "",
         field("NIK", row["NIK"] || ""),
-        field("JK", "isimanual"),
+        field("JK", jk),
         field("LAHIR", row["Tgl Lahir"] || ""),
         "",
         tunggalSensor,
         field("KERJA", "isimanual"),
         field("SALDO", saldo),
-        field("N/A", "isimanual"),
+        field("N/A", iuranDate),
         field("KPJ", kpj),
         field("NAMA", row["Nama"] || ""),
         field("EMAIL", row["Email"] || ""),
