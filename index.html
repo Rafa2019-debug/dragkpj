@@ -229,6 +229,12 @@
             <div class="stat-card"><div class="icon orange"><i class="fas fa-credit-card"></i></div><div class="label">Rata-rata Saldo</div><div class="value" id="statAvg">Rp 0</div></div>
             <div class="stat-card"><div class="icon purple"><i class="fas fa-gem"></i></div><div class="label">Saldo >= 1 Juta</div><div class="value" id="stat1M">0</div><div class="trend up"><i class="fas fa-gem"></i> High value</div></div>
             <div class="stat-card"><div class="icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="label">Belum Pengkinian</div><div class="value" id="statWarning">0</div><div class="trend down"><i class="fas fa-exclamation-circle"></i> Perlu tindak lanjut</div></div>
+            <div class="stat-card">
+                <div class="icon" style="background:#fecaca;color:#dc2626;"><i class="fas fa-clone"></i></div>
+                <div class="label">NIK Duplikat</div>
+                <div class="value" id="statDuplicate">0</div>
+                <div class="trend down" id="dupTrend"><i class="fas fa-clone"></i> Siap dihapus</div>
+            </div>
         </div>
         <div class="toolbar">
             <div class="upload-zone" onclick="document.getElementById('csvInput').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
@@ -243,6 +249,12 @@
                 </button>
                 <button class="btn btn-outline" id="btnHideSmall" onclick="hideSmallSaldo()">
                     <i class="fas fa-gem"></i> Sembunyikan &lt; 1 Juta
+                </button>
+                <button class="btn btn-outline" id="btnDup" onclick="removeDuplicateNik()">
+                    <i class="fas fa-trash-alt"></i> Hapus NIK Ganda
+                </button>
+                <button class="btn btn-outline" id="btnIuran2017" onclick="toggleIuran2017()">
+                    <i class="fas fa-calendar-alt"></i> Iuran ≥ 2017
                 </button>
             </div>
             <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
@@ -292,7 +304,9 @@ let sortCol = null;
 let sortAsc = true;
 let searchTerm = '';
 let filter1M = false;
+let filterIuran2017 = false;
 let visibleCols = [];
+let duplicateNikSet = new Set();
 let copyBuffer = '';
 let newlyUploadedNiks = new Set();
 const STORAGE_KEY = 'bpjs_filtered_data_v6';
@@ -331,10 +345,26 @@ function init() {
         } catch (e) { allData = [...defaultData]; }
     } else { allData = [...defaultData]; }
     filter1M = false;
+    filterIuran2017 = false;
     document.getElementById("btnShowAll").className = "btn btn-primary";
     document.getElementById("btnHideSmall").className = "btn btn-outline";
+    document.getElementById("btnDup").className = "btn btn-outline";
+    document.getElementById("btnIuran2017").className = "btn btn-outline";
+    updateDuplicateNik();
     applyFilter(); renderColumnMenu(); updateStats();
 }
+function updateDuplicateNik() {
+    const nikCount = {};
+    allData.forEach(row => {
+        const nik = row["NIK"];
+        if (nik) nikCount[nik] = (nikCount[nik] || 0) + 1;
+    });
+    duplicateNikSet = new Set();
+    Object.entries(nikCount).forEach(([nik, count]) => {
+        if (count > 1) duplicateNikSet.add(nik);
+    });
+}
+
 function saveToStorage() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); }
     catch (e) { console.warn("Gagal menyimpan ke localStorage", e); }
@@ -408,6 +438,11 @@ function applyFilter() {
         if (filter1M) {
             const saldo = parseSaldo(row["Total Saldo"]);
             if (saldo < 1000000) return false;
+        }
+        if (filterIuran2017) {
+            const iuranTime = parseIuranDate(row["Iuran Terakhir"] || "");
+            const cutoff = new Date(2017, 0, 1).getTime(); // 1 Januari 2017
+            if (iuranTime < cutoff) return false;
         }
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -549,6 +584,13 @@ function updateStats() {
     document.getElementById("stat1M").textContent = count1M;
     const avg = filteredData.length > 0 ? totalSaldo / filteredData.length : 0;
     document.getElementById("statAvg").textContent = formatRupiah(avg);
+    document.getElementById("statDuplicate").textContent = duplicateNikSet.size;
+    const dupTrend = document.getElementById("dupTrend");
+    if (dupTrend) {
+        dupTrend.innerHTML = filterDuplicate 
+            ? '<i class="fas fa-filter"></i> Filter aktif' 
+            : '<i class="fas fa-clone"></i> Klik untuk filter';
+    }
 }
 function formatRupiah(num) {
     return "Rp " + Math.round(num).toLocaleString("id-ID").replace(/,/g, ".");
@@ -586,6 +628,48 @@ function hideSmallSaldo() {
     showToast("Saldo di bawah 1 juta disembunyikan", "success");
     applyFilter();
 }
+function toggleIuran2017() {
+    filterIuran2017 = !filterIuran2017;
+    const btn = document.getElementById("btnIuran2017");
+    if (filterIuran2017) {
+        btn.className = "btn btn-primary";
+        btn.innerHTML = '<i class="fas fa-calendar-alt"></i> Iuran ≥ 2017 (Aktif)';
+        showToast("Menampilkan data dengan iuran terakhir ≥ 1 Januari 2017", "success");
+    } else {
+        btn.className = "btn btn-outline";
+        btn.innerHTML = '<i class="fas fa-calendar-alt"></i> Iuran ≥ 2017';
+        showToast("Filter iuran dimatikan", "success");
+    }
+    applyFilter();
+}
+
+function removeDuplicateNik() {
+    const nikCount = {};
+    allData.forEach(row => {
+        const nik = row["NIK"];
+        if (nik) nikCount[nik] = (nikCount[nik] || 0) + 1;
+    });
+    const dupNik = Object.entries(nikCount).filter(([nik, count]) => count > 1).map(([nik]) => nik);
+    if (dupNik.length === 0) {
+        showToast("Tidak ada NIK ganda yang perlu dihapus", "success");
+        return;
+    }
+    const seen = new Set();
+    const before = allData.length;
+    allData = allData.filter(row => {
+        const nik = row["NIK"];
+        if (!nik) return true;
+        if (seen.has(nik)) return false;
+        seen.add(nik);
+        return true;
+    });
+    const removed = before - allData.length;
+    updateDuplicateNik();
+    saveToStorage();
+    applyFilter();
+    showToast(`${removed} data NIK ganda dihapus — ${allData.length} data tersisa`, "success");
+}
+
 function toggleColumn(key, visible) {
     if (visible) { if (!visibleCols.includes(key)) visibleCols.push(key); }
     else { visibleCols = visibleCols.filter(c => c !== key); }
@@ -608,7 +692,7 @@ function closeConfirmDelete() {
     document.getElementById("confirmDeleteModal").classList.remove("active");
 }
 function confirmDeleteAll() {
-    allData = []; newlyUploadedNiks.clear(); localStorage.removeItem(STORAGE_KEY);
+    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); localStorage.removeItem(STORAGE_KEY);
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
@@ -625,6 +709,21 @@ function convertIuranToDate(str) {
     const bulanNum = bulanMap[bln.toUpperCase()];
     if (!bulanNum) return str;
     return `${tgl.padStart(2, "0")}-${bulanNum}-${thn}`;
+}
+
+function parseIuranDate(str) {
+    if (!str) return 0;
+    const bulanMap = {
+        "JANUARI": 0, "FEBRUARI": 1, "MARET": 2, "APRIL": 3,
+        "MEI": 4, "JUNI": 5, "JULI": 6, "AGUSTUS": 7,
+        "SEPTEMBER": 8, "OKTOBER": 9, "NOVEMBER": 10, "DESEMBER": 11
+    };
+    const parts = str.trim().split(/\s+/);
+    if (parts.length !== 3) return 0;
+    const [tgl, bln, thn] = parts;
+    const bulanNum = bulanMap[bln.toUpperCase()];
+    if (bulanNum === undefined) return 0;
+    return new Date(parseInt(thn), bulanNum, parseInt(tgl)).getTime();
 }
 
 function detectGenderFromNik(nik) {
@@ -718,19 +817,25 @@ function finishProcessFiles(allParsed, fileCount) {
     if (allParsed.length > 0) {
         const existingNik = new Set(allData.map(d => d["NIK"]));
         let added = 0;
+        let dupRemoved = 0;
         const newRows = [];
         allParsed.forEach(row => {
             if (!existingNik.has(row["NIK"])) {
                 newRows.push(row);
                 existingNik.add(row["NIK"]);
                 added++;
+            } else {
+                dupRemoved++;
             }
         });
         allData = newRows.concat(allData);
         newlyUploadedNiks = new Set(newRows.map(r => r["NIK"]));
+        updateDuplicateNik();
         saveToStorage();
         applyFilter();
-        showToast(`Berhasil memuat ${allParsed.length} baris dari ${fileCount} file (${added} data baru di atas)`, "success");
+        let msg = `✅ ${added} data baru dari ${fileCount} file`;
+        if (dupRemoved > 0) msg += ` — ${dupRemoved} duplikat otomatis dihapus`;
+        showToast(msg, "success");
     } else {
         showToast("File CSV kosong atau format tidak valid", "error");
     }
