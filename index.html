@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Filter BPJS - Klaim JHT</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb; --primary-dark: #1d4ed8; --success: #10b981;
@@ -1096,22 +1097,26 @@ function doExportCSV() {
 }
 function doExportExcel() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
+    if (typeof XLSX === "undefined") { showToast("Gagal memuat library Excel, cek koneksi internet", "error"); return; }
     const headers = getExportHeaders();
-    let html = "<table><thead><tr>";
-    headers.forEach(h => html += `<th>${h}</th>`);
-    html += "</tr></thead><tbody>";
+    const aoa = [headers];
     filteredData.forEach(row => {
-        html += "<tr>";
-        headers.forEach(h => html += `<td>${row[h] || ''}</td>`);
-        html += "</tr>";
+        aoa.push(headers.map(h => (row[h] !== undefined && row[h] !== null) ? String(row[h]) : ""));
     });
-    html += "</tbody></table>";
-    const blob = new Blob([`\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>${html}</body></html>`], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "filtered_bpjs_data.xls"; a.click();
-    URL.revokeObjectURL(url);
-    showToast("Excel berhasil diexport!", "success");
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    // Paksa semua sel jadi teks agar Excel tidak mengubah format tanggal (mis. Tgl Lahir tetap pakai strip "-")
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (ws[addr]) { ws[addr].t = 's'; ws[addr].z = '@'; }
+        }
+    }
+    ws['!cols'] = headers.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "BPJS Data");
+    XLSX.writeFile(wb, "filtered_bpjs_data.xlsx");
+    showToast("Excel (.xlsx) berhasil diexport!", "success");
 }
 function downloadFile(content, filename, type) {
     const blob = new Blob([content], { type });
