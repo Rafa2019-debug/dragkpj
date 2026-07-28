@@ -205,6 +205,16 @@
         .loading-overlay.active { display: flex; }
         .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .export-order-item {
+            background: var(--bg); border: 2px solid var(--border); border-radius: 10px;
+            padding: 10px 14px; cursor: grab; display: flex; align-items: center; gap: 10px;
+            font-size: 0.9rem; font-weight: 600; transition: all 0.2s; user-select: none;
+        }
+        .export-order-item:hover { border-color: var(--primary); background: rgba(37,99,235,0.05); }
+        .export-order-item.dragging { opacity: 0.5; border-color: var(--primary); background: #dbeafe; cursor: grabbing; }
+        .export-order-item .drag-handle { color: var(--text-secondary); font-size: 1rem; }
+        .export-order-item .col-name { flex: 1; }
+        .export-order-item .col-key { font-size: 0.75rem; color: var(--text-secondary); font-weight: 400; }
         @media (max-width: 768px) {
             .header h1 { font-size: 1.3rem; } .stats-grid { grid-template-columns: 1fr 1fr; }
             .toolbar { flex-direction: column; } .search-box, .upload-zone { width: 100%; }
@@ -258,8 +268,8 @@
                 </button>
             </div>
             <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
-            <button class="btn btn-success" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
-            <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
             <div class="column-toggle">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
@@ -293,6 +303,29 @@
             </div>
         </div>
     </div>
+    <div class="modal-overlay" id="exportOrderModal">
+        <div class="modal-box" style="max-width:420px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-sort"></i> Urutkan Kolom Export</h3>
+                <button class="modal-close" onclick="closeExportOrderModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">
+                    <i class="fas fa-info-circle"></i> Centang kolom yang ingin didownload, tahan lalu geser untuk mengubah urutan
+                </p>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <button class="btn-copy" onclick="setAllExportChecked(true)"><i class="fas fa-check-square"></i> Pilih Semua</button>
+                    <button class="btn-copy" onclick="setAllExportChecked(false)"><i class="fas fa-square"></i> Batal Semua</button>
+                </div>
+                <div id="exportOrderList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="resetExportOrder()">Reset Urutan</button>
+                <button class="btn btn-primary" onclick="saveExportOrder()"><i class="fas fa-save"></i> Simpan & Export CSV</button>
+                <button class="btn btn-success" onclick="saveExportOrderExcel()"><i class="fas fa-file-excel"></i> Simpan & Export Excel</button>
+            </div>
+        </div>
+    </div>
     <div class="toast-container" id="toastContainer"></div>
     <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
 <script>
@@ -306,6 +339,9 @@ let searchTerm = '';
 let filter1M = false;
 let filterIuran2017 = false;
 let visibleCols = [];
+let exportColOrder = [];
+const EXPORT_ORDER_KEY = 'bpjs_export_order_v1';
+const EXPORT_CHECKED_KEY = 'bpjs_export_checked_v1';
 let duplicateNikSet = new Set();
 let copyBuffer = '';
 let newlyUploadedNiks = new Set();
@@ -324,7 +360,7 @@ const colConfig = [
     { key: 'Nama', label: 'Nama Lengkap', width: '180px' },
     { key: 'Tgl Lahir', label: 'Tgl Lahir', width: '110px' },
     { key: 'Email', label: 'Email', width: '220px' },
-    { key: 'List KPJ (PU)', label: 'No. KPJ', width: '140px' },
+    { key: 'List KPJ (PU)', label: 'KPJ', width: '140px' },
     { key: 'Jml Kartu', label: 'Jml Kartu', width: '90px', align: 'center' },
     { key: 'Total Saldo', label: 'Total Saldo', width: '140px', format: 'saldo' },
     { key: 'Iuran Terakhir', label: 'Iuran Terakhir', width: '140px' },
@@ -515,7 +551,7 @@ function renderTable() {
             renderDetailItem("Email", row["Email"]) +
             renderDetailItem("Password", row["Password"]) +
             renderDetailItem("Status Akun", row["Status Akun"]) +
-            renderDetailItem("No. KPJ", row["List KPJ (PU)"]) +
+            renderDetailItem("KPJ", row["List KPJ (PU)"]) +
             renderDetailItem("Jumlah Kartu", row["Jml Kartu"]) +
             renderDetailItem("Status Added", row["Status Added"]) +
             renderDetailItem("Total Saldo", row["Total Saldo"]) +
@@ -775,6 +811,211 @@ function quickCopy(idx) {
         showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
     });
 }
+function getExportColOrder() {
+    const saved = localStorage.getItem(EXPORT_ORDER_KEY);
+    if (saved) {
+        try { return JSON.parse(saved); }
+        catch (e) { return null; }
+    }
+    return null;
+}
+
+function getExportChecked() {
+    const saved = localStorage.getItem(EXPORT_CHECKED_KEY);
+    if (saved) {
+        try { return JSON.parse(saved); }
+        catch (e) { return null; }
+    }
+    return null;
+}
+
+function saveExportChecked(checkedMap) {
+    localStorage.setItem(EXPORT_CHECKED_KEY, JSON.stringify(checkedMap));
+}
+
+function saveExportColOrder(order) {
+    localStorage.setItem(EXPORT_ORDER_KEY, JSON.stringify(order));
+}
+
+function resetExportOrder() {
+    localStorage.removeItem(EXPORT_ORDER_KEY);
+    localStorage.removeItem(EXPORT_CHECKED_KEY);
+    exportColOrder = [];
+    renderExportOrderList();
+    showToast("Urutan & pilihan kolom direset ke default", "success");
+}
+
+function renderExportOrderList() {
+    const container = document.getElementById("exportOrderList");
+    if (!container) return;
+    const saved = getExportColOrder();
+    let keys = saved || Object.keys(filteredData[0] || {});
+    if (keys.length === 0 && filteredData.length > 0) {
+        keys = Object.keys(filteredData[0]);
+    }
+    const savedChecked = getExportChecked() || {};
+    let html = "";
+    keys.forEach((key, idx) => {
+        const label = colConfig.find(c => c.key === key)?.label || key;
+        const checked = savedChecked.hasOwnProperty(key) ? savedChecked[key] : true;
+        html += `<div class="export-order-item" draggable="true" data-key="${key}" data-index="${idx}">
+            <i class="fas fa-grip-vertical drag-handle"></i>
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExportChecked('${key}', this.checked)">
+            <span class="col-name">${label}</span>
+            <span class="col-key">${key}</span>
+        </div>`;
+    });
+    container.innerHTML = html;
+
+    // Attach drag events
+    const items = container.querySelectorAll('.export-order-item');
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDropReorder);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function toggleExportChecked(key, checked) {
+    const checkedMap = getExportChecked() || {};
+    checkedMap[key] = checked;
+    saveExportChecked(checkedMap);
+}
+
+function setAllExportChecked(state) {
+    const container = document.getElementById("exportOrderList");
+    if (!container) return;
+    const checkedMap = getExportChecked() || {};
+    container.querySelectorAll('.export-order-item').forEach(item => {
+        const key = item.dataset.key;
+        checkedMap[key] = state;
+        const box = item.querySelector('input[type="checkbox"]');
+        if (box) box.checked = state;
+    });
+    saveExportChecked(checkedMap);
+}
+
+let dragSrcEl = null;
+
+function handleDragStart(e) {
+    dragSrcEl = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.index);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    const items = document.querySelectorAll('.export-order-item');
+    items.forEach(item => item.style.borderColor = '');
+    dragSrcEl = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    if (this !== dragSrcEl) {
+        this.style.borderColor = 'var(--primary)';
+    }
+}
+
+function handleDragLeave(e) {
+    this.style.borderColor = '';
+}
+
+function handleDropReorder(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    this.style.borderColor = '';
+
+    if (dragSrcEl === this) return;
+
+    const container = document.getElementById("exportOrderList");
+    const items = Array.from(container.querySelectorAll('.export-order-item'));
+    const fromIdx = parseInt(dragSrcEl.dataset.index);
+    const toIdx = parseInt(this.dataset.index);
+
+    // Reorder array
+    const keys = items.map(item => item.dataset.key);
+    const [moved] = keys.splice(fromIdx, 1);
+    keys.splice(toIdx, 0, moved);
+
+    // Re-render
+    renderExportOrderListFromKeys(keys);
+}
+
+function renderExportOrderListFromKeys(keys) {
+    const container = document.getElementById("exportOrderList");
+    const savedChecked = getExportChecked() || {};
+    let html = "";
+    keys.forEach((key, idx) => {
+        const label = colConfig.find(c => c.key === key)?.label || key;
+        const checked = savedChecked.hasOwnProperty(key) ? savedChecked[key] : true;
+        html += `<div class="export-order-item" draggable="true" data-key="${key}" data-index="${idx}">
+            <i class="fas fa-grip-vertical drag-handle"></i>
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExportChecked('${key}', this.checked)">
+            <span class="col-name">${label}</span>
+            <span class="col-key">${key}</span>
+        </div>`;
+    });
+    container.innerHTML = html;
+
+    const items = container.querySelectorAll('.export-order-item');
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDropReorder);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function openExportOrderModal() {
+    if (filteredData.length === 0) {
+        showToast("Tidak ada data untuk diexport", "error");
+        return;
+    }
+    renderExportOrderList();
+    document.getElementById("exportOrderModal").classList.add("active");
+}
+
+function closeExportOrderModal() {
+    document.getElementById("exportOrderModal").classList.remove("active");
+}
+
+function getCheckedExportKeys() {
+    const container = document.getElementById("exportOrderList");
+    const items = container.querySelectorAll('.export-order-item');
+    return Array.from(items)
+        .filter(item => item.querySelector('input[type="checkbox"]').checked)
+        .map(item => item.dataset.key);
+}
+
+function saveExportOrder() {
+    const keys = getCheckedExportKeys();
+    if (keys.length === 0) { showToast("Pilih minimal 1 kolom untuk diexport", "error"); return; }
+    exportColOrder = keys;
+    saveExportColOrder(exportColOrder);
+    closeExportOrderModal();
+    doExportCSV();
+}
+
+function saveExportOrderExcel() {
+    const keys = getCheckedExportKeys();
+    if (keys.length === 0) { showToast("Pilih minimal 1 kolom untuk diexport", "error"); return; }
+    exportColOrder = keys;
+    saveExportColOrder(exportColOrder);
+    closeExportOrderModal();
+    doExportExcel();
+}
+
 function handleFile(e) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -832,9 +1073,16 @@ function finishProcessFiles(allParsed, fileCount) {
         showToast("File CSV kosong atau format tidak valid", "error");
     }
 }
-function exportCSV() {
+function getExportHeaders() {
+    const allKeys = Object.keys(filteredData[0]);
+    if (exportColOrder && exportColOrder.length > 0) {
+        return exportColOrder.filter(k => allKeys.includes(k));
+    }
+    return allKeys;
+}
+function doExportCSV() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
-    const headers = Object.keys(filteredData[0]);
+    const headers = getExportHeaders();
     let csv = headers.join(",") + "\n";
     filteredData.forEach(row => {
         csv += headers.map(h => {
@@ -846,9 +1094,9 @@ function exportCSV() {
     downloadFile(csv, "filtered_bpjs_data.csv", "text/csv");
     showToast("CSV berhasil diexport!", "success");
 }
-function exportExcel() {
+function doExportExcel() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
-    const headers = Object.keys(filteredData[0]);
+    const headers = getExportHeaders();
     let html = "<table><thead><tr>";
     headers.forEach(h => html += `<th>${h}</th>`);
     html += "</tr></thead><tbody>";
