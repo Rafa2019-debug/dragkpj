@@ -846,14 +846,20 @@ function resetExportOrder() {
     showToast("Urutan & pilihan kolom direset ke default", "success");
 }
 
+function getExportableKeys() {
+    if (!filteredData.length) return [];
+    const dataKeys = Object.keys(filteredData[0]);
+    return colConfig.map(c => c.key).filter(k => dataKeys.includes(k));
+}
+
 function renderExportOrderList() {
     const container = document.getElementById("exportOrderList");
     if (!container) return;
+    const exportable = getExportableKeys();
     const saved = getExportColOrder();
-    let keys = saved || Object.keys(filteredData[0] || {});
-    if (keys.length === 0 && filteredData.length > 0) {
-        keys = Object.keys(filteredData[0]);
-    }
+    let keys = saved ? saved.filter(k => exportable.includes(k)) : [];
+    exportable.forEach(k => { if (!keys.includes(k)) keys.push(k); });
+    if (keys.length === 0) keys = exportable;
     const savedChecked = getExportChecked() || {};
     let html = "";
     keys.forEach((key, idx) => {
@@ -1075,11 +1081,12 @@ function finishProcessFiles(allParsed, fileCount) {
     }
 }
 function getExportHeaders() {
-    const allKeys = Object.keys(filteredData[0]);
+    const exportable = getExportableKeys();
     if (exportColOrder && exportColOrder.length > 0) {
-        return exportColOrder.filter(k => allKeys.includes(k));
+        const filtered = exportColOrder.filter(k => exportable.includes(k));
+        return filtered.length > 0 ? filtered : exportable;
     }
-    return allKeys;
+    return exportable;
 }
 function doExportCSV() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
