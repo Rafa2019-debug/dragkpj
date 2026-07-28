@@ -221,14 +221,14 @@
                 <button class="btn-icon" onclick="window.print()" title="Print"><i class="fas fa-print"></i></button>
             </div>
             <h1><i class="fas fa-shield-halved"></i> Dashboard Filter BPJS - Klaim JHT</h1>
-            <p>Menampilkan data peserta dengan kriteria: Belum Pengkinian Data, Layak (JHTA000), Klaim dapat melalui JMO</p>
+            <p>Semua data peserta terbaca. Gunakan filter manual untuk menyaring data.</p>
         </div>
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card"><div class="icon blue"><i class="fas fa-users"></i></div><div class="label">Total Peserta</div><div class="value" id="statTotal">0</div><div class="trend up"><i class="fas fa-arrow-up"></i> Data terfilter</div></div>
             <div class="stat-card"><div class="icon green"><i class="fas fa-money-bill-wave"></i></div><div class="label">Total Saldo</div><div class="value" id="statSaldo">Rp 0</div></div>
             <div class="stat-card"><div class="icon orange"><i class="fas fa-credit-card"></i></div><div class="label">Rata-rata Saldo</div><div class="value" id="statAvg">Rp 0</div></div>
             <div class="stat-card"><div class="icon purple"><i class="fas fa-gem"></i></div><div class="label">Saldo >= 1 Juta</div><div class="value" id="stat1M">0</div><div class="trend up"><i class="fas fa-gem"></i> High value</div></div>
-            <div class="stat-card"><div class="icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="label">Belum Pengkinian</div><div class="value" id="statWarning">0</div><div class="trend down"><i class="fas fa-exclamation-circle"></i> Perlu tindak lanjut</div></div>
+            <div class="stat-card"><div class="icon red"><i class="fas fa-database"></i></div><div class="label">Total Data</div><div class="value" id="statWarning">0</div><div class="trend up"><i class="fas fa-check-circle"></i> Semua terbaca</div></div>
             <div class="stat-card">
                 <div class="icon" style="background:#fecaca;color:#dc2626;"><i class="fas fa-clone"></i></div>
                 <div class="label">NIK Duplikat</div>
@@ -261,7 +261,7 @@
             <button class="btn btn-success" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
             <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
             <div class="column-toggle">
-                <button class="btn btn-outline" onclick="toggleColumnMenu()"><i class="fas fa-columns"></i> Kolom</button>
+                <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
             </div>
         </div>
@@ -425,23 +425,13 @@ function normStr(s) {
 }
 function applyFilter() {
     filteredData = allData.filter(row => {
-        const sp = normStr(row["Status Pengkinian"]);
-        const pk = normStr(row["Pesan Pengkinian"]);
-        const pcl = normStr(row["Pesan Klaim"]);
-        const ket = normStr(row["Keterangan"]);
-        const matchCriteria =
-            sp.includes("belum pengkinian data") &&
-            pk.includes("layak") && pk.includes("jhta000") &&
-            pcl.includes("tidak dapat dilanjutkan") && pcl.includes("pengkinian data") &&
-            ket.includes("jmo");
-        if (!matchCriteria) return false;
         if (filter1M) {
             const saldo = parseSaldo(row["Total Saldo"]);
             if (saldo < 1000000) return false;
         }
         if (filterIuran2017) {
             const iuranTime = parseIuranDate(row["Iuran Terakhir"] || "");
-            const cutoff = new Date(2017, 0, 1).getTime(); // 1 Januari 2017
+            const cutoff = new Date(2017, 0, 1).getTime();
             if (iuranTime < cutoff) return false;
         }
         if (searchTerm) {
@@ -573,7 +563,7 @@ function renderColumnMenu() {
 }
 function updateStats() {
     document.getElementById("statTotal").textContent = filteredData.length;
-    document.getElementById("statWarning").textContent = filteredData.length;
+    document.getElementById("statWarning").textContent = allData.length;
     let totalSaldo = 0, count1M = 0;
     filteredData.forEach(row => {
         const s = parseSaldo(row["Total Saldo"]);
@@ -677,7 +667,9 @@ function toggleColumn(key, visible) {
     colConfig.forEach(c => { if (visibleCols.includes(c.key)) ordered.push(c.key); });
     visibleCols = ordered; renderTable();
 }
-function toggleColumnMenu() {
+function toggleColumnMenu(e) {
+    if (e) e.stopPropagation();
+    renderColumnMenu();
     document.getElementById("columnMenu").classList.toggle("show");
 }
 document.addEventListener("click", (e) => {
