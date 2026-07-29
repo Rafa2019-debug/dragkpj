@@ -77,7 +77,13 @@
             background: rgba(239,68,68,0.06); border: 1px dashed rgba(239,68,68,0.35);
             border-radius: 12px; padding: 10px 14px;
         }
-        .toolbar-group.danger-zone .toolbar-group-label { color: var(--danger); }
+        .toolbar-group.danger-zone .toolbar-group-label { color: var(--danger); width: 100%; justify-content: flex-start; }
+        .danger-toggle-btn {
+            margin-left: auto; background: none; border: none; cursor: pointer;
+            color: var(--danger); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.6px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px;
+        }
+        .danger-toggle-btn:hover { text-decoration: underline; }
         .icon-badge {
             width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
@@ -367,8 +373,13 @@
                 </div>
                 <div class="toolbar-divider"></div>
                 <div class="toolbar-group danger-zone">
-                    <span class="toolbar-group-label"><i class="fas fa-triangle-exclamation"></i> Zona Bahaya</span>
-                    <div class="toolbar-group-buttons">
+                    <span class="toolbar-group-label">
+                        <i class="fas fa-triangle-exclamation"></i> Zona Bahaya
+                        <button type="button" class="danger-toggle-btn" id="dangerToggleBtn" onclick="toggleDangerZone()">
+                            <i class="fas fa-eye" id="dangerToggleIcon"></i> <span id="dangerToggleText">Tampilkan</span>
+                        </button>
+                    </span>
+                    <div class="toolbar-group-buttons" id="dangerZoneButtons" style="display:none;">
                         <button class="btn btn-danger" onclick="openConfirmDelete()"><span class="icon-badge icon-badge-onsolid"><i class="fas fa-trash-alt"></i></span> Hapus Semua</button>
                     </div>
                 </div>
@@ -511,6 +522,7 @@ function init() {
     document.getElementById("btnIuran2017").className = "btn btn-outline";
     migrateUids();
     updateDuplicateNik();
+    restoreDangerZoneState();
     applyFilter(); renderColumnMenu(); updateStats();
 }
 function updateDuplicateNik() {
@@ -1432,6 +1444,24 @@ function toggleTheme() {
         html.setAttribute("data-theme", "dark");
         icon.className = "fas fa-sun";
     }
+}
+const DANGER_ZONE_KEY = "bpjs_danger_zone_visible";
+function setDangerZoneVisible(visible) {
+    const box = document.getElementById("dangerZoneButtons");
+    const icon = document.getElementById("dangerToggleIcon");
+    const text = document.getElementById("dangerToggleText");
+    box.style.display = visible ? "flex" : "none";
+    icon.className = visible ? "fas fa-eye-slash" : "fas fa-eye";
+    text.textContent = visible ? "Sembunyikan" : "Tampilkan";
+}
+function toggleDangerZone() {
+    const box = document.getElementById("dangerZoneButtons");
+    const willShow = box.style.display === "none";
+    setDangerZoneVisible(willShow);
+    localStorage.setItem(DANGER_ZONE_KEY, willShow ? "1" : "0");
+}
+function restoreDangerZoneState() {
+    setDangerZoneVisible(localStorage.getItem(DANGER_ZONE_KEY) === "1");
 }
 window.addEventListener("DOMContentLoaded", init);
 </script>
