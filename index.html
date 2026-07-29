@@ -73,6 +73,7 @@
         .upload-zone p { font-size: 0.9rem; color: var(--text-secondary); }
         .upload-zone input { display: none; }
         .search-box { position: relative; flex: 2; min-width: 250px; }
+        .search-box.nik-box { flex: 1; min-width: 180px; }
         .search-box textarea {
             width: 100%; padding: 12px 80px 12px 44px; border: 2px solid var(--border);
             border-radius: 12px; background: var(--bg); color: var(--text); font-size: 0.95rem;
@@ -272,6 +273,12 @@
                 <span class="search-count" id="searchCount">0</span>
                 <button type="button" class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Bersihkan pencarian"><i class="fas fa-times"></i></button>
             </div>
+            <div class="search-box nik-box">
+                <i class="fas fa-id-card"></i>
+                <textarea id="nikPrefixInput" rows="1" placeholder="Kode NIK depan (mis. 3201, bisa banyak)" oninput="handleNikPrefixInput(this)"></textarea>
+                <span class="search-count" id="nikPrefixCount">0</span>
+                <button type="button" class="search-clear" id="nikPrefixClearBtn" onclick="clearNikPrefix()" title="Bersihkan"><i class="fas fa-times"></i></button>
+            </div>
             <div class="filter-group">
                 <button class="btn btn-primary" id="btnShowAll" onclick="showAllSaldo()">
                     <i class="fas fa-list"></i> Tampilkan Semua
@@ -355,6 +362,7 @@ let rowsPerPage = 10;
 let sortCol = null;
 let sortAsc = true;
 let searchTerms = [];
+let nikPrefixes = [];
 let filter1M = false;
 let filterIuran2017 = false;
 let visibleCols = [];
@@ -488,6 +496,10 @@ function applyFilter() {
             const iuranTime = parseIuranDate(row["Iuran Terakhir"] || "");
             const cutoff = new Date(2017, 0, 1).getTime();
             if (iuranTime < cutoff) return false;
+        }
+        if (nikPrefixes.length > 0) {
+            const nik = String(row["NIK"] || "");
+            if (!nikPrefixes.some(p => nik.startsWith(p))) return false;
         }
         if (searchTerms.length > 0) {
             const searchable = Object.values(row).join(" ").toLowerCase();
@@ -682,6 +694,33 @@ function debounceSearch() {
         }
         applyFilter();
     }, 300);
+}
+let nikPrefixTimeout;
+function handleNikPrefixInput(el) {
+    autoGrowSearch(el);
+    document.getElementById("nikPrefixClearBtn").style.display = el.value ? "flex" : "none";
+    clearTimeout(nikPrefixTimeout);
+    nikPrefixTimeout = setTimeout(() => {
+        const raw = document.getElementById("nikPrefixInput").value;
+        nikPrefixes = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+        const countEl = document.getElementById("nikPrefixCount");
+        if (nikPrefixes.length > 1) {
+            countEl.textContent = nikPrefixes.length;
+            countEl.style.display = "inline-block";
+        } else {
+            countEl.style.display = "none";
+        }
+        applyFilter();
+    }, 300);
+}
+function clearNikPrefix() {
+    const el = document.getElementById("nikPrefixInput");
+    el.value = "";
+    el.style.height = "auto";
+    document.getElementById("nikPrefixClearBtn").style.display = "none";
+    document.getElementById("nikPrefixCount").style.display = "none";
+    nikPrefixes = [];
+    applyFilter();
 }
 function showAllSaldo() {
     filter1M = false;
