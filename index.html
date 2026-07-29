@@ -73,12 +73,25 @@
         .upload-zone p { font-size: 0.9rem; color: var(--text-secondary); }
         .upload-zone input { display: none; }
         .search-box { position: relative; flex: 2; min-width: 250px; }
-        .search-box input {
-            width: 100%; padding: 12px 16px 12px 44px; border: 2px solid var(--border);
+        .search-box textarea {
+            width: 100%; padding: 12px 80px 12px 44px; border: 2px solid var(--border);
             border-radius: 12px; background: var(--bg); color: var(--text); font-size: 0.95rem;
+            font-family: inherit; line-height: 1.5; resize: none; overflow-y: auto;
+            max-height: 140px; min-height: 46px;
         }
-        .search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .search-box i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .search-box textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .search-box i { position: absolute; left: 16px; top: 14px; color: var(--text-secondary); }
+        .search-clear {
+            position: absolute; right: 10px; top: 11px; width: 24px; height: 24px; border: none;
+            border-radius: 50%; background: var(--border); color: var(--text-secondary); cursor: pointer;
+            display: none; align-items: center; justify-content: center; font-size: 0.7rem;
+        }
+        .search-clear:hover { background: var(--danger); color: white; }
+        .search-count {
+            position: absolute; right: 40px; top: 13px; font-size: 0.7rem; font-weight: 700;
+            color: var(--primary); background: #dbeafe; padding: 2px 8px; border-radius: 10px;
+            display: none;
+        }
         .filter-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .toggle-filter {
             display: flex; align-items: center; gap: 8px; padding: 10px 16px;
@@ -253,7 +266,12 @@
                 <i class="fas fa-cloud-upload-alt"></i>
                 <p><strong>Klik atau drag & drop</strong> file CSV di sini<br><small style="color:var(--text-secondary)">Bisa banyak file sekaligus</small></p>
             </div>
-            <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Cari nama, NIK, email, atau saldo..." oninput="debounceSearch()"></div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <textarea id="searchInput" rows="1" placeholder="Cari nama, NIK, email, atau saldo... (bisa banyak sekaligus, 1 per baris atau pisah koma)" oninput="handleSearchInput(this)"></textarea>
+                <span class="search-count" id="searchCount">0</span>
+                <button type="button" class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Bersihkan pencarian"><i class="fas fa-times"></i></button>
+            </div>
             <div class="filter-group">
                 <button class="btn btn-primary" id="btnShowAll" onclick="showAllSaldo()">
                     <i class="fas fa-list"></i> Tampilkan Semua
@@ -336,7 +354,7 @@ let currentPage = 1;
 let rowsPerPage = 10;
 let sortCol = null;
 let sortAsc = true;
-let searchTerm = '';
+let searchTerms = [];
 let filter1M = false;
 let filterIuran2017 = false;
 let visibleCols = [];
@@ -471,10 +489,9 @@ function applyFilter() {
             const cutoff = new Date(2017, 0, 1).getTime();
             if (iuranTime < cutoff) return false;
         }
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+        if (searchTerms.length > 0) {
             const searchable = Object.values(row).join(" ").toLowerCase();
-            return searchable.includes(term);
+            return searchTerms.some(term => searchable.includes(term));
         }
         return true;
     });
@@ -633,10 +650,36 @@ function goPage(p) {
     currentPage = p; renderTable(); renderPagination();
 }
 let searchTimeout;
+function handleSearchInput(el) {
+    autoGrowSearch(el);
+    document.getElementById("searchClearBtn").style.display = el.value ? "flex" : "none";
+    debounceSearch();
+}
+function autoGrowSearch(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+}
+function clearSearch() {
+    const el = document.getElementById("searchInput");
+    el.value = "";
+    el.style.height = "auto";
+    document.getElementById("searchClearBtn").style.display = "none";
+    document.getElementById("searchCount").style.display = "none";
+    searchTerms = [];
+    applyFilter();
+}
 function debounceSearch() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        searchTerm = document.getElementById("searchInput").value;
+        const raw = document.getElementById("searchInput").value;
+        searchTerms = raw.split(/[\n,]+/).map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+        const countEl = document.getElementById("searchCount");
+        if (searchTerms.length > 1) {
+            countEl.textContent = searchTerms.length;
+            countEl.style.display = "inline-block";
+        } else {
+            countEl.style.display = "none";
+        }
         applyFilter();
     }, 300);
 }
