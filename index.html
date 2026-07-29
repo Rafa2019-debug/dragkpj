@@ -62,7 +62,59 @@
         .toolbar {
             background: var(--card); border-radius: 14px; padding: 20px;
             box-shadow: var(--shadow); border: 1px solid var(--border);
-            margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+            margin-bottom: 20px; display: flex; flex-direction: column; gap: 18px;
+        }
+        .toolbar-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        .toolbar-row-actions { align-items: stretch; }
+        .toolbar-group { display: flex; flex-direction: column; gap: 8px; }
+        .toolbar-group-label {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+            color: var(--text-secondary); display: flex; align-items: center; gap: 6px;
+        }
+        .toolbar-group-buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .toolbar-divider { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+        .toolbar-group.danger-zone {
+            background: rgba(239,68,68,0.06); border: 1px dashed rgba(239,68,68,0.35);
+            border-radius: 12px; padding: 10px 14px;
+        }
+        .toolbar-group.danger-zone .toolbar-group-label { color: var(--danger); }
+        .icon-badge {
+            width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-badge i { font-size: 0.72rem; }
+        .icon-badge-blue { background: #dbeafe; } .icon-badge-blue i { color: var(--primary); }
+        .icon-badge-amber { background: #fef3c7; } .icon-badge-amber i { color: var(--warning); }
+        .icon-badge-purple { background: #ede9fe; } .icon-badge-purple i { color: #7c3aed; }
+        .icon-badge-gray { background: rgba(100,116,139,0.15); } .icon-badge-gray i { color: var(--text-secondary); }
+        .icon-badge-onsolid { background: rgba(255,255,255,0.25); } .icon-badge-onsolid i { color: #fff; }
+        .toolbar-group-buttons .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 14px 7px 7px; border-radius: 10px; font-size: 0.85rem;
+        }
+        .toolbar-group-buttons .btn-outline {
+            background: var(--bg); color: var(--text); border: none;
+            box-shadow: inset 0 0 0 0.5px var(--border);
+        }
+        .toolbar-group-buttons .btn-outline:hover { box-shadow: inset 0 0 0 1px var(--primary); color: var(--primary); transform: none; }
+        .toolbar-group-buttons .btn-primary {
+            background: #d1fae5; color: #065f46; border: none; box-shadow: inset 0 0 0 1px var(--success);
+        }
+        .toolbar-group-buttons .btn-success { border: none; }
+        .toolbar-group-buttons .btn-danger { border: none; }
+        .segmented {
+            display: inline-flex; background: var(--bg); border-radius: 12px; padding: 4px; gap: 4px;
+            box-shadow: inset 0 0 0 0.5px var(--border);
+        }
+        .toolbar-group-buttons .segmented .btn { box-shadow: none; padding: 6px 12px 6px 6px; }
+        .toolbar-group-buttons .segmented .btn-primary {
+            background: var(--card); color: var(--text); box-shadow: 0 0 0 0.5px var(--border);
+        }
+        .toolbar-group-buttons .segmented .btn-outline { background: transparent; color: var(--text-secondary); }
+        .toolbar-group-buttons .segmented .btn-outline:hover { box-shadow: none; color: var(--primary); }
+        @media (max-width: 900px) {
+            .toolbar-divider { display: none; }
+            .toolbar-group { width: 100%; }
         }
         .upload-zone {
             border: 2px dashed var(--border); border-radius: 12px; padding: 16px 24px;
@@ -262,43 +314,64 @@
             </div>
         </div>
         <div class="toolbar">
-            <div class="upload-zone" onclick="document.getElementById('csvInput').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                <input type="file" id="csvInput" accept=".csv" multiple onchange="handleFile(event)">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p><strong>Klik atau drag & drop</strong> file CSV di sini<br><small style="color:var(--text-secondary)">Bisa banyak file sekaligus</small></p>
+            <div class="toolbar-row">
+                <div class="upload-zone" onclick="document.getElementById('csvInput').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <input type="file" id="csvInput" accept=".csv" multiple onchange="handleFile(event)">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p><strong>Klik atau drag & drop</strong> file CSV di sini<br><small style="color:var(--text-secondary)">Bisa banyak file sekaligus</small></p>
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <textarea id="searchInput" rows="1" placeholder="Cari nama, NIK, email, atau saldo... (bisa banyak sekaligus, 1 per baris atau pisah koma)" oninput="handleSearchInput(this)"></textarea>
+                    <span class="search-count" id="searchCount">0</span>
+                    <button type="button" class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Bersihkan pencarian"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="search-box nik-box">
+                    <i class="fas fa-id-card"></i>
+                    <textarea id="nikPrefixInput" rows="1" placeholder="Kode NIK depan (mis. 3201, bisa banyak)" oninput="handleNikPrefixInput(this)"></textarea>
+                    <span class="search-count" id="nikPrefixCount">0</span>
+                    <button type="button" class="search-clear" id="nikPrefixClearBtn" onclick="clearNikPrefix()" title="Bersihkan"><i class="fas fa-times"></i></button>
+                </div>
             </div>
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <textarea id="searchInput" rows="1" placeholder="Cari nama, NIK, email, atau saldo... (bisa banyak sekaligus, 1 per baris atau pisah koma)" oninput="handleSearchInput(this)"></textarea>
-                <span class="search-count" id="searchCount">0</span>
-                <button type="button" class="search-clear" id="searchClearBtn" onclick="clearSearch()" title="Bersihkan pencarian"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="search-box nik-box">
-                <i class="fas fa-id-card"></i>
-                <textarea id="nikPrefixInput" rows="1" placeholder="Kode NIK depan (mis. 3201, bisa banyak)" oninput="handleNikPrefixInput(this)"></textarea>
-                <span class="search-count" id="nikPrefixCount">0</span>
-                <button type="button" class="search-clear" id="nikPrefixClearBtn" onclick="clearNikPrefix()" title="Bersihkan"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="filter-group">
-                <button class="btn btn-primary" id="btnShowAll" onclick="showAllSaldo()">
-                    <i class="fas fa-list"></i> Tampilkan Semua
-                </button>
-                <button class="btn btn-outline" id="btnHideSmall" onclick="hideSmallSaldo()">
-                    <i class="fas fa-gem"></i> Sembunyikan &lt; 1 Juta
-                </button>
-                <button class="btn btn-outline" id="btnDup" onclick="removeDuplicateNik()">
-                    <i class="fas fa-trash-alt"></i> Hapus NIK Ganda
-                </button>
-                <button class="btn btn-outline" id="btnIuran2017" onclick="toggleIuran2017()">
-                    <i class="fas fa-calendar-alt"></i> Iuran ≥ 2017
-                </button>
-            </div>
-            <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
-            <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-csv"></i> Export CSV</button>
-            <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
-            <div class="column-toggle">
-                <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
-                <div class="column-menu" id="columnMenu"></div>
+            <div class="toolbar-row toolbar-row-actions">
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label"><i class="fas fa-sliders"></i> Filter Tampilan</span>
+                    <div class="toolbar-group-buttons">
+                        <div class="segmented">
+                            <button class="btn btn-primary" id="btnShowAll" onclick="showAllSaldo()">
+                                <span class="icon-badge icon-badge-blue"><i class="fas fa-list"></i></span> Tampilkan Semua
+                            </button>
+                            <button class="btn btn-outline" id="btnHideSmall" onclick="hideSmallSaldo()">
+                                <span class="icon-badge icon-badge-amber"><i class="fas fa-gem"></i></span> Sembunyikan &lt; 1 Juta
+                            </button>
+                        </div>
+                        <button class="btn btn-outline" id="btnDup" onclick="removeDuplicateNik()">
+                            <span class="icon-badge icon-badge-gray"><i class="fas fa-clone"></i></span> Hapus NIK Ganda
+                        </button>
+                        <button class="btn btn-outline" id="btnIuran2017" onclick="toggleIuran2017()">
+                            <span class="icon-badge icon-badge-purple"><i class="fas fa-calendar-alt"></i></span> Iuran ≥ 2017
+                        </button>
+                    </div>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group">
+                    <span class="toolbar-group-label"><i class="fas fa-file-export"></i> Export & Tampilan Kolom</span>
+                    <div class="toolbar-group-buttons">
+                        <button class="btn btn-success" onclick="openExportOrderModal()"><span class="icon-badge icon-badge-onsolid"><i class="fas fa-file-csv"></i></span> Export CSV</button>
+                        <button class="btn btn-success" onclick="openExportOrderModal()"><span class="icon-badge icon-badge-onsolid"><i class="fas fa-file-excel"></i></span> Export Excel</button>
+                        <div class="column-toggle">
+                            <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><span class="icon-badge icon-badge-gray"><i class="fas fa-columns"></i></span> Kolom</button>
+                            <div class="column-menu" id="columnMenu"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group danger-zone">
+                    <span class="toolbar-group-label"><i class="fas fa-triangle-exclamation"></i> Zona Bahaya</span>
+                    <div class="toolbar-group-buttons">
+                        <button class="btn btn-danger" onclick="openConfirmDelete()"><span class="icon-badge icon-badge-onsolid"><i class="fas fa-trash-alt"></i></span> Hapus Semua</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="table-container">
@@ -307,6 +380,17 @@
                 <div style="display:flex;gap:8px;align-items:center;">
                     <span class="badge badge-primary" id="filterBadge">Filter Aktif</span>
                     <span class="badge badge-success" id="countBadge">0 data</span>
+                </div>
+            </div>
+            <div class="table-header" id="selectionBar" style="display:none;background:rgba(37,99,235,0.06);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-check-square" style="color:var(--primary)"></i>
+                    <span id="selectionCount" style="font-weight:600;">0 dipilih</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-copy" onclick="selectAllSearchResults()"><i class="fas fa-object-group"></i> Pilih Semua Hasil Pencarian</button>
+                    <button class="btn-copy" onclick="clearSelection()"><i class="fas fa-times"></i> Batal Pilih</button>
+                    <button class="btn btn-danger" style="padding:8px 14px;font-size:0.85rem;" onclick="openConfirmDeleteSelected()"><i class="fas fa-trash-alt"></i> Hapus Terpilih</button>
                 </div>
             </div>
             <div style="overflow-x:auto;">
@@ -326,6 +410,16 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeConfirmDelete()">Batal</button>
                 <button class="btn btn-danger" onclick="confirmDeleteAll()"><i class="fas fa-trash-alt"></i> Ya, Hapus Semua</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay confirm-modal" id="confirmDeleteSelectedModal">
+        <div class="modal-box">
+            <div class="modal-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Konfirmasi Hapus Terpilih</h3><button class="modal-close" onclick="closeConfirmDeleteSelected()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body"><p>Apakah Anda yakin ingin <strong>menghapus <span id="confirmDeleteSelectedCount">0</span> data terpilih</strong>?<br><br>Tindakan ini tidak dapat dibatalkan. Data akan dihapus dari penyimpanan lokal dan tidak bisa dikembalikan.</p></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeConfirmDeleteSelected()">Batal</button>
+                <button class="btn btn-danger" onclick="confirmDeleteSelected()"><i class="fas fa-trash-alt"></i> Ya, Hapus Terpilih</button>
             </div>
         </div>
     </div>
@@ -372,6 +466,8 @@ const EXPORT_CHECKED_KEY = 'bpjs_export_checked_v1';
 let duplicateNikSet = new Set();
 let copyBuffer = '';
 let newlyUploadedNiks = new Set();
+let selectedUids = new Set();
+let uidCounter = 1;
 const STORAGE_KEY = 'bpjs_filtered_data_v6';
 const defaultData = [
     {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
@@ -413,6 +509,7 @@ function init() {
     document.getElementById("btnHideSmall").className = "btn btn-outline";
     document.getElementById("btnDup").className = "btn btn-outline";
     document.getElementById("btnIuran2017").className = "btn btn-outline";
+    migrateUids();
     updateDuplicateNik();
     applyFilter(); renderColumnMenu(); updateStats();
 }
@@ -540,7 +637,8 @@ function renderTable() {
     const thead = document.getElementById("tableHead");
     const tbody = document.getElementById("tableBody");
     const empty = document.getElementById("emptyState");
-    let headHTML = '<th style="width:40px">#</th>';
+    let headHTML = `<th style="width:36px"><input type="checkbox" id="selectAllPageCheckbox" onchange="toggleSelectAllPage(this.checked)" title="Pilih semua di halaman ini"></th>`;
+    headHTML += '<th style="width:40px">#</th>';
     colConfig.forEach(col => {
         if (!visibleCols.includes(col.key)) return;
         const sortClass = sortCol === col.key ? (sortAsc ? "sort-asc" : "sort-desc") : "";
@@ -550,7 +648,9 @@ function renderTable() {
     thead.innerHTML = headHTML;
     if (filteredData.length === 0) {
         tbody.innerHTML = ""; empty.style.display = "block";
-        document.getElementById("countBadge").textContent = "0 data"; return;
+        document.getElementById("countBadge").textContent = "0 data";
+        updateSelectionBar();
+        return;
     }
     empty.style.display = "none";
     document.getElementById("countBadge").textContent = filteredData.length + " data";
@@ -562,6 +662,7 @@ function renderTable() {
         const globalIdx = start + idx;
         const isNew = newlyUploadedNiks.has(row["NIK"]);
         html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''}">`;
+        html += `<td><input type="checkbox" class="row-checkbox" data-uid="${row._uid}" onchange="toggleRowSelect('${row._uid}', this.checked)" ${selectedUids.has(row._uid) ? 'checked' : ''}></td>`;
         html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
         colConfig.forEach(col => {
             if (!visibleCols.includes(col.key)) return;
@@ -574,7 +675,7 @@ function renderTable() {
         });
         html += `<td><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
         html += '</tr>';
-        html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 2}"><div class="detail-content">` +
+        html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 3}"><div class="detail-content">` +
             renderDetailItem("NIK", row["NIK"]) +
             renderDetailItem("Nama Lengkap", row["Nama"]) +
             renderDetailItem("Tanggal Lahir", row["Tgl Lahir"]) +
@@ -593,6 +694,8 @@ function renderTable() {
             '</div></td></tr>';
     });
     tbody.innerHTML = html;
+    syncSelectAllPageCheckbox();
+    updateSelectionBar();
 }
 function renderDetailItem(label, value) {
     return `<div class="detail-item"><div class="label">${label}</div><div class="value">${value || '-'}</div></div>`;
@@ -742,11 +845,11 @@ function toggleIuran2017() {
     const btn = document.getElementById("btnIuran2017");
     if (filterIuran2017) {
         btn.className = "btn btn-primary";
-        btn.innerHTML = '<i class="fas fa-calendar-alt"></i> Iuran ≥ 2017 (Aktif)';
+        btn.innerHTML = '<span class="icon-badge icon-badge-purple"><i class="fas fa-calendar-alt"></i></span> Iuran ≥ 2017 (Aktif)';
         showToast("Menampilkan data dengan iuran terakhir ≥ 1 Januari 2017", "success");
     } else {
         btn.className = "btn btn-outline";
-        btn.innerHTML = '<i class="fas fa-calendar-alt"></i> Iuran ≥ 2017';
+        btn.innerHTML = '<span class="icon-badge icon-badge-purple"><i class="fas fa-calendar-alt"></i></span> Iuran ≥ 2017';
         showToast("Filter iuran dimatikan", "success");
     }
     applyFilter();
@@ -774,9 +877,101 @@ function removeDuplicateNik() {
     });
     const removed = before - allData.length;
     updateDuplicateNik();
+    pruneSelection();
     saveToStorage();
     applyFilter();
     showToast(`${removed} data NIK ganda dihapus — ${allData.length} data tersisa`, "success");
+}
+
+function nextUid() { return "r" + (uidCounter++); }
+
+function migrateUids() {
+    let maxNum = 0;
+    allData.forEach(row => {
+        if (row._uid) {
+            const m = /^r(\d+)$/.exec(row._uid);
+            if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+        }
+    });
+    uidCounter = maxNum + 1;
+    allData.forEach(row => { if (!row._uid) row._uid = nextUid(); });
+}
+
+function pruneSelection() {
+    const validUids = new Set(allData.map(r => r._uid));
+    selectedUids.forEach(uid => { if (!validUids.has(uid)) selectedUids.delete(uid); });
+}
+
+function toggleRowSelect(uid, checked) {
+    if (checked) selectedUids.add(uid); else selectedUids.delete(uid);
+    updateSelectionBar();
+    syncSelectAllPageCheckbox();
+}
+
+function toggleSelectAllPage(checked) {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageRows = filteredData.slice(start, end);
+    pageRows.forEach(row => {
+        if (checked) selectedUids.add(row._uid); else selectedUids.delete(row._uid);
+    });
+    renderTable();
+}
+
+function selectAllSearchResults() {
+    if (filteredData.length === 0) { showToast("Tidak ada hasil pencarian untuk dipilih", "error"); return; }
+    filteredData.forEach(row => selectedUids.add(row._uid));
+    renderTable();
+    showToast(`${filteredData.length} data hasil pencarian dipilih`, "success");
+}
+
+function clearSelection() {
+    selectedUids.clear();
+    renderTable();
+}
+
+function syncSelectAllPageCheckbox() {
+    const cb = document.getElementById("selectAllPageCheckbox");
+    if (!cb) return;
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageRows = filteredData.slice(start, end);
+    if (pageRows.length === 0) { cb.checked = false; cb.indeterminate = false; return; }
+    const selectedCount = pageRows.filter(r => selectedUids.has(r._uid)).length;
+    cb.checked = selectedCount === pageRows.length;
+    cb.indeterminate = selectedCount > 0 && selectedCount < pageRows.length;
+}
+
+function updateSelectionBar() {
+    const bar = document.getElementById("selectionBar");
+    const countEl = document.getElementById("selectionCount");
+    if (!bar || !countEl) return;
+    if (selectedUids.size > 0) {
+        bar.style.display = "flex";
+        countEl.textContent = `${selectedUids.size} dipilih`;
+    } else {
+        bar.style.display = "none";
+    }
+}
+
+function openConfirmDeleteSelected() {
+    if (selectedUids.size === 0) { showToast("Belum ada data yang dipilih", "error"); return; }
+    document.getElementById("confirmDeleteSelectedCount").textContent = selectedUids.size;
+    document.getElementById("confirmDeleteSelectedModal").classList.add("active");
+}
+function closeConfirmDeleteSelected() {
+    document.getElementById("confirmDeleteSelectedModal").classList.remove("active");
+}
+function confirmDeleteSelected() {
+    const before = allData.length;
+    allData = allData.filter(row => !selectedUids.has(row._uid));
+    const removed = before - allData.length;
+    selectedUids.clear();
+    updateDuplicateNik();
+    saveToStorage();
+    closeConfirmDeleteSelected();
+    applyFilter();
+    showToast(`${removed} data terpilih berhasil dihapus`, "success");
 }
 
 function toggleColumn(key, visible) {
@@ -803,7 +998,7 @@ function closeConfirmDelete() {
     document.getElementById("confirmDeleteModal").classList.remove("active");
 }
 function confirmDeleteAll() {
-    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); localStorage.removeItem(STORAGE_KEY);
+    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); selectedUids.clear(); localStorage.removeItem(STORAGE_KEY);
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
@@ -1143,6 +1338,7 @@ function finishProcessFiles(allParsed, fileCount) {
         const newRows = [];
         allParsed.forEach(row => {
             if (!existingNik.has(row["NIK"])) {
+                row._uid = nextUid();
                 newRows.push(row);
                 existingNik.add(row["NIK"]);
                 added++;
