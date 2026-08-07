@@ -151,6 +151,18 @@
         tr.row-new:hover td { background: rgba(16,185,129,0.22) !important; }
         tr.row-new .nik::after { content: "BARU"; margin-left: 8px; font-size: 0.65rem; font-weight: 700; background: var(--success); color: #fff; padding: 2px 6px; border-radius: 6px; vertical-align: middle; }
         .nik { font-family: monospace; font-weight: 600; color: var(--primary); }
+        .nik-cell { display: flex; align-items: center; gap: 8px; }
+        .btn-copy-icon {
+            width: 26px; height: 26px; border: none; border-radius: 7px; background: #dbeafe;
+            color: var(--primary); cursor: pointer; display: inline-flex; align-items: center;
+            justify-content: center; font-size: 0.75rem; flex-shrink: 0; transition: all 0.2s;
+        }
+        .btn-copy-icon:hover { background: var(--primary); color: #fff; transform: translateY(-1px); }
+        .btn-copy-icon.copied { background: var(--success); color: #fff; }
+        .btn-copy-icon.copied:hover { background: #059669; }
+        input.row-check, input#selectAllCheckbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+        tr.row-selected td { background: rgba(37,99,235,0.09) !important; }
+        .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
         .saldo { font-weight: 700; color: var(--success); }
         .status-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -185,9 +197,22 @@
             padding: 12px; min-width: 200px; display: none; z-index: 100;
         }
         .column-menu.show { display: block; }
-        .column-menu label { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem; }
+        .column-menu label { display: flex; align-items: flex-start; gap: 10px; padding: 8px; cursor: pointer; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem; }
         .column-menu label:hover { background: var(--bg); }
-        .column-menu input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+        .column-menu input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; margin-top: 2px; }
+        @media (max-width: 768px) {
+            .column-menu {
+                position: fixed; top: 50%; left: 50%; right: auto;
+                transform: translate(-50%, -50%);
+                width: min(90vw, 340px); max-width: 340px;
+                max-height: 70vh; overflow-y: auto;
+                z-index: 10000;
+            }
+            .column-menu::before {
+                content: ""; position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+                z-index: -1; backdrop-filter: blur(2px);
+            }
+        }
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
         .empty-state h3 { margin-bottom: 8px; color: var(--text); }
@@ -292,11 +317,17 @@
                 <button class="btn btn-outline" id="btnIuran2017" onclick="toggleIuran2017()">
                     <i class="fas fa-calendar-alt"></i> Iuran ≥ 2017
                 </button>
+                <div class="column-toggle" id="keteranganToggleWrap">
+                    <button class="btn btn-outline" id="btnKeteranganFilter" onclick="toggleKeteranganMenu(event)"><i class="fas fa-filter"></i> Keterangan</button>
+                    <div class="column-menu" id="keteranganMenu"></div>
+                </div>
             </div>
+            <button class="btn btn-outline" id="btnClearSelection" onclick="clearSelection()" style="display:none;"><i class="fas fa-times"></i> Batal Pilih</button>
+            <button class="btn btn-danger" id="btnDeleteSelected" onclick="openConfirmDeleteSelected()" disabled><i class="fas fa-trash-alt"></i> Hapus Terpilih (0)</button>
             <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-csv"></i> Export CSV</button>
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
-            <div class="column-toggle">
+            <div class="column-toggle" id="columnToggleWrap">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
             </div>
@@ -326,6 +357,16 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeConfirmDelete()">Batal</button>
                 <button class="btn btn-danger" onclick="confirmDeleteAll()"><i class="fas fa-trash-alt"></i> Ya, Hapus Semua</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay confirm-modal" id="confirmDeleteSelectedModal">
+        <div class="modal-box">
+            <div class="modal-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Konfirmasi Hapus Terpilih</h3><button class="modal-close" onclick="closeConfirmDeleteSelected()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body"><p>Apakah Anda yakin ingin menghapus <strong id="selectedCountText">0 data</strong> yang ditandai?<br><br>Tindakan ini tidak dapat dibatalkan.</p></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeConfirmDeleteSelected()">Batal</button>
+                <button class="btn btn-danger" onclick="confirmDeleteSelected()"><i class="fas fa-trash-alt"></i> Ya, Hapus</button>
             </div>
         </div>
     </div>
@@ -365,6 +406,7 @@ let searchTerms = [];
 let nikPrefixes = [];
 let filter1M = false;
 let filterIuran2017 = false;
+let keteranganFilter = null;
 let visibleCols = [];
 let exportColOrder = [];
 const EXPORT_ORDER_KEY = 'bpjs_export_order_v1';
@@ -372,6 +414,8 @@ const EXPORT_CHECKED_KEY = 'bpjs_export_checked_v1';
 let duplicateNikSet = new Set();
 let copyBuffer = '';
 let newlyUploadedNiks = new Set();
+let selectedNiks = new Set();
+let copiedNiks = new Set();
 const STORAGE_KEY = 'bpjs_filtered_data_v6';
 const defaultData = [
     {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
@@ -497,6 +541,10 @@ function applyFilter() {
             const cutoff = new Date(2017, 0, 1).getTime();
             if (iuranTime < cutoff) return false;
         }
+        if (keteranganFilter !== null) {
+            const ket = row["Keterangan"] || "";
+            if (!keteranganFilter.has(ket)) return false;
+        }
         if (nikPrefixes.length > 0) {
             const nik = String(row["NIK"] || "");
             if (!nikPrefixes.some(p => nik.startsWith(p))) return false;
@@ -540,7 +588,8 @@ function renderTable() {
     const thead = document.getElementById("tableHead");
     const tbody = document.getElementById("tableBody");
     const empty = document.getElementById("emptyState");
-    let headHTML = '<th style="width:40px">#</th>';
+    let headHTML = '<th style="width:36px"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" title="Pilih semua data yang terfilter"></th>';
+    headHTML += '<th style="width:40px">#</th>';
     colConfig.forEach(col => {
         if (!visibleCols.includes(col.key)) return;
         const sortClass = sortCol === col.key ? (sortAsc ? "sort-asc" : "sort-desc") : "";
@@ -561,20 +610,27 @@ function renderTable() {
     pageData.forEach((row, idx) => {
         const globalIdx = start + idx;
         const isNew = newlyUploadedNiks.has(row["NIK"]);
-        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''}">`;
+        const nikVal = row["NIK"] || "";
+        const isSelected = selectedNiks.has(nikVal);
+        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''} ${isSelected ? 'row-selected' : ''}">`;
+        html += `<td><input type="checkbox" class="row-check" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${nikVal}', this)"></td>`;
         html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
         colConfig.forEach(col => {
             if (!visibleCols.includes(col.key)) return;
             let val = row[col.key] || "-";
             let style = col.align ? `text-align:${col.align}` : "";
-            if (col.format === "nik") html += `<td style="${style}"><span class="nik">${val}</span></td>`;
+            if (col.format === "nik") {
+                const copiedCls = copiedNiks.has(val) ? "copied" : "";
+                const copyIcon = copiedNiks.has(val) ? "fa-check" : "fa-copy";
+                html += `<td style="${style}"><div class="nik-cell"><span class="nik">${val}</span><button class="btn-copy-icon ${copiedCls}" onclick="copyNik(event, '${val}')" title="Salin NIK"><i class="fas ${copyIcon}"></i></button></div></td>`;
+            }
             else if (col.format === "saldo") html += `<td style="${style}"><span class="saldo">${val}</span></td>`;
             else if (col.format === "status") html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
             else html += `<td style="${style}">${val}</td>`;
         });
         html += `<td><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
         html += '</tr>';
-        html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 2}"><div class="detail-content">` +
+        html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 3}"><div class="detail-content">` +
             renderDetailItem("NIK", row["NIK"]) +
             renderDetailItem("Nama Lengkap", row["Nama"]) +
             renderDetailItem("Tanggal Lahir", row["Tgl Lahir"]) +
@@ -593,6 +649,7 @@ function renderTable() {
             '</div></td></tr>';
     });
     tbody.innerHTML = html;
+    updateSelectedUI();
 }
 function renderDetailItem(label, value) {
     return `<div class="detail-item"><div class="label">${label}</div><div class="value">${value || '-'}</div></div>`;
@@ -752,6 +809,70 @@ function toggleIuran2017() {
     applyFilter();
 }
 
+function getUniqueKeterangan() {
+    const set = new Set();
+    allData.forEach(r => { if (r["Keterangan"]) set.add(r["Keterangan"]); });
+    return Array.from(set).sort();
+}
+function isKeteranganChecked(val) {
+    if (keteranganFilter === null) return true;
+    return keteranganFilter.has(val);
+}
+function renderKeteranganMenu() {
+    const menu = document.getElementById("keteranganMenu");
+    const options = getUniqueKeterangan();
+    if (options.length === 0) {
+        menu.innerHTML = '<div style="padding:8px 4px;color:var(--text-secondary);font-size:0.85rem;">Belum ada data</div>';
+        return;
+    }
+    let html = `<div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-copy" onclick="setAllKeterangan(true)"><i class="fas fa-check-square"></i> Semua</button>
+        <button class="btn-copy" onclick="setAllKeterangan(false)"><i class="fas fa-square"></i> Kosongkan</button>
+    </div>`;
+    options.forEach((val, i) => {
+        const checked = isKeteranganChecked(val) ? "checked" : "";
+        html += `<label title="${escapeHtml(val)}"><input type="checkbox" ${checked} data-ket-idx="${i}" onchange="toggleKeteranganOptionByIdx(${i}, this.checked)"> <span style="word-break:break-word;overflow-wrap:break-word;">${val}</span></label>`;
+    });
+    menu.innerHTML = html;
+}
+function escapeHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function toggleKeteranganOptionByIdx(idx, checked) {
+    const options = getUniqueKeterangan();
+    const val = options[idx];
+    if (val === undefined) return;
+    if (keteranganFilter === null) {
+        keteranganFilter = new Set(options);
+    }
+    if (checked) keteranganFilter.add(val); else keteranganFilter.delete(val);
+    if (keteranganFilter.size === options.length) keteranganFilter = null;
+    updateKeteranganButtonLabel();
+    applyFilter();
+}
+function setAllKeterangan(state) {
+    keteranganFilter = state ? null : new Set();
+    renderKeteranganMenu();
+    updateKeteranganButtonLabel();
+    applyFilter();
+}
+function toggleKeteranganMenu(e) {
+    if (e) e.stopPropagation();
+    renderKeteranganMenu();
+    document.getElementById("keteranganMenu").classList.toggle("show");
+}
+function updateKeteranganButtonLabel() {
+    const btn = document.getElementById("btnKeteranganFilter");
+    if (!btn) return;
+    if (keteranganFilter === null) {
+        btn.innerHTML = '<i class="fas fa-filter"></i> Keterangan';
+        btn.className = "btn btn-outline";
+    } else {
+        btn.innerHTML = `<i class="fas fa-filter"></i> Keterangan (${keteranganFilter.size})`;
+        btn.className = "btn btn-primary";
+    }
+}
+
 function removeDuplicateNik() {
     const nikCount = {};
     allData.forEach(row => {
@@ -774,6 +895,7 @@ function removeDuplicateNik() {
     });
     const removed = before - allData.length;
     updateDuplicateNik();
+    cleanupSelection();
     saveToStorage();
     applyFilter();
     showToast(`${removed} data NIK ganda dihapus — ${allData.length} data tersisa`, "success");
@@ -792,8 +914,12 @@ function toggleColumnMenu(e) {
     document.getElementById("columnMenu").classList.toggle("show");
 }
 document.addEventListener("click", (e) => {
-    if (!e.target.closest(".column-toggle")) {
+    if (!e.target.closest("#columnToggleWrap")) {
         document.getElementById("columnMenu").classList.remove("show");
+    }
+    if (!e.target.closest("#keteranganToggleWrap")) {
+        const km = document.getElementById("keteranganMenu");
+        if (km) km.classList.remove("show");
     }
 });
 function openConfirmDelete() {
@@ -803,7 +929,7 @@ function closeConfirmDelete() {
     document.getElementById("confirmDeleteModal").classList.remove("active");
 }
 function confirmDeleteAll() {
-    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); localStorage.removeItem(STORAGE_KEY);
+    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); selectedNiks.clear(); localStorage.removeItem(STORAGE_KEY);
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
@@ -893,6 +1019,97 @@ function quickCopy(idx) {
         document.body.removeChild(ta);
         showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
     });
+}
+function copyNik(e, nik) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const markCopied = () => {
+        copiedNiks.add(nik);
+        const icon = btn.querySelector("i");
+        icon.className = "fas fa-check";
+        btn.classList.add("copied");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(nik).then(markCopied).catch(() => {
+            const ta = document.createElement("textarea");
+            ta.value = nik;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            markCopied();
+        });
+    } else {
+        const ta = document.createElement("textarea");
+        ta.value = nik;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        markCopied();
+    }
+}
+function toggleRowSelect(nik, checkboxEl) {
+    const checked = checkboxEl.checked;
+    if (checked) selectedNiks.add(nik); else selectedNiks.delete(nik);
+    const row = checkboxEl.closest("tr");
+    if (row) row.classList.toggle("row-selected", checked);
+    updateSelectedUI();
+}
+function toggleSelectAll(checked) {
+    filteredData.forEach(row => {
+        const nik = row["NIK"];
+        if (!nik) return;
+        if (checked) selectedNiks.add(nik); else selectedNiks.delete(nik);
+    });
+    renderTable();
+}
+function clearSelection() {
+    selectedNiks.clear();
+    renderTable();
+}
+function cleanupSelection() {
+    const validNiks = new Set(allData.map(r => r["NIK"]));
+    if (selectedNiks.size > 0) selectedNiks.forEach(n => { if (!validNiks.has(n)) selectedNiks.delete(n); });
+    if (copiedNiks.size > 0) copiedNiks.forEach(n => { if (!validNiks.has(n)) copiedNiks.delete(n); });
+}
+function updateSelectedUI() {
+    const delBtn = document.getElementById("btnDeleteSelected");
+    const clearBtn = document.getElementById("btnClearSelection");
+    if (delBtn) {
+        delBtn.disabled = selectedNiks.size === 0;
+        delBtn.innerHTML = `<i class="fas fa-trash-alt"></i> Hapus Terpilih (${selectedNiks.size})`;
+    }
+    if (clearBtn) {
+        clearBtn.style.display = selectedNiks.size > 0 ? "inline-flex" : "none";
+    }
+    const selectAllBox = document.getElementById("selectAllCheckbox");
+    if (selectAllBox) {
+        const allNiks = filteredData.map(r => r["NIK"]).filter(Boolean);
+        const allChecked = allNiks.length > 0 && allNiks.every(n => selectedNiks.has(n));
+        const someChecked = allNiks.some(n => selectedNiks.has(n));
+        selectAllBox.checked = allChecked;
+        selectAllBox.indeterminate = !allChecked && someChecked;
+    }
+}
+function openConfirmDeleteSelected() {
+    if (selectedNiks.size === 0) return;
+    document.getElementById("selectedCountText").textContent = selectedNiks.size + " data";
+    document.getElementById("confirmDeleteSelectedModal").classList.add("active");
+}
+function closeConfirmDeleteSelected() {
+    document.getElementById("confirmDeleteSelectedModal").classList.remove("active");
+}
+function confirmDeleteSelected() {
+    const before = allData.length;
+    allData = allData.filter(row => !selectedNiks.has(row["NIK"]));
+    const removed = before - allData.length;
+    selectedNiks.clear();
+    updateDuplicateNik();
+    saveToStorage();
+    closeConfirmDeleteSelected();
+    applyFilter();
+    showToast(`${removed} data terpilih berhasil dihapus`, "success");
 }
 function getExportColOrder() {
     const saved = localStorage.getItem(EXPORT_ORDER_KEY);
@@ -1153,6 +1370,7 @@ function finishProcessFiles(allParsed, fileCount) {
         allData = newRows.concat(allData);
         newlyUploadedNiks = new Set(newRows.map(r => r["NIK"]));
         updateDuplicateNik();
+        cleanupSelection();
         saveToStorage();
         applyFilter();
         let msg = `✅ ${added} data baru dari ${fileCount} file`;
