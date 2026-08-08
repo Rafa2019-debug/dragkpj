@@ -327,6 +327,9 @@
             <button class="btn btn-danger" onclick="openConfirmDelete()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-csv"></i> Export CSV</button>
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-outline" onclick="exportBackupJSON()"><i class="fas fa-database"></i> Backup Data</button>
+            <button class="btn btn-outline" onclick="triggerRestoreBackup()"><i class="fas fa-upload"></i> Pulihkan Backup</button>
+            <input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none" onchange="handleRestoreBackup(event)">
             <div class="column-toggle" id="columnToggleWrap">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
@@ -474,7 +477,73 @@ function updateDuplicateNik() {
 
 function saveToStorage() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); }
-    catch (e) { console.warn("Gagal menyimpan ke localStorage", e); }
+    catch (e) {
+        console.warn("Gagal menyimpan ke localStorage", e);
+        showToast("⚠️ Penyimpanan otomatis gagal (penuh/tidak didukung browser). Segera klik 'Backup Data' agar data tidak hilang!", "error");
+    }
+}
+function mergeRows(parsedRows) {
+    const existingNik = new Set(allData.map(d => d["NIK"]));
+    let added = 0;
+    let skipped = 0;
+    const newRows = [];
+    parsedRows.forEach(row => {
+        const nik = row["NIK"];
+        if (!existingNik.has(nik)) {
+            newRows.push(row);
+            existingNik.add(nik);
+            added++;
+        } else {
+            skipped++; // NIK sudah ada -> data lama dipertahankan, tidak ditimpa
+        }
+    });
+    allData = newRows.concat(allData);
+    newlyUploadedNiks = new Set(newRows.map(r => r["NIK"]));
+    updateDuplicateNik();
+    cleanupSelection();
+    saveToStorage();
+    applyFilter();
+    return { added, skipped };
+}
+function exportBackupJSON() {
+    if (allData.length === 0) { showToast("Tidak ada data untuk dibackup", "error"); return; }
+    try {
+        const blob = new Blob([JSON.stringify(allData)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+        a.href = url;
+        a.download = `backup-data-peserta-${ts}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`✅ Backup ${allData.length} data berhasil diunduh — simpan file ini baik-baik`, "success");
+    } catch (e) {
+        showToast("Gagal membuat file backup", "error");
+    }
+}
+function triggerRestoreBackup() {
+    document.getElementById("restoreFileInput").click();
+}
+function handleRestoreBackup(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const parsed = JSON.parse(ev.target.result);
+            if (!Array.isArray(parsed)) throw new Error("Bukan array");
+            const { added, skipped } = mergeRows(parsed);
+            let msg = `✅ ${added} data dipulihkan dari backup`;
+            if (skipped > 0) msg += ` — ${skipped} NIK sudah ada, dilewati (data lama tidak ditimpa)`;
+            showToast(msg, "success");
+        } catch (err) {
+            showToast("Gagal memuat file backup: format tidak valid", "error");
+        }
+        e.target.value = "";
+    };
+    reader.readAsText(file);
 }
 function parseCSV(text) {
     const rows = [];
@@ -1369,26 +1438,7 @@ function processFiles(files) {
 function finishProcessFiles(allParsed, fileCount) {
     showLoading(false);
     if (allParsed.length > 0) {
-        const existingNik = new Set(allData.map(d => d["NIK"]));
-        let added = 0;
-        let skipped = 0;
-        const newRows = [];
-        allParsed.forEach(row => {
-            const nik = row["NIK"];
-            if (!existingNik.has(nik)) {
-                newRows.push(row);
-                existingNik.add(nik);
-                added++;
-            } else {
-                skipped++; // NIK sudah ada -> data lama dipertahankan, tidak ditimpa
-            }
-        });
-        allData = newRows.concat(allData);
-        newlyUploadedNiks = new Set(newRows.map(r => r["NIK"]));
-        updateDuplicateNik();
-        cleanupSelection();
-        saveToStorage();
-        applyFilter();
+        const { added, skipped } = mergeRows(allParsed);
         let msg = `✅ ${added} data baru dari ${fileCount} file`;
         if (skipped > 0) msg += ` — ${skipped} NIK sudah ada, dilewati (data lama tidak ditimpa)`;
         showToast(msg, "success");
