@@ -445,12 +445,12 @@ const colConfig = [
 function init() {
     visibleCols = colConfig.map(c => c.key);
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    if (saved !== null) {
         try {
             const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                allData = parsed;
-                showToast("Data dimuat dari penyimpanan lokal", "success");
+            if (Array.isArray(parsed)) {
+                allData = parsed; // termasuk array kosong jika sengaja dikosongkan lewat "Hapus Semua"
+                if (parsed.length > 0) showToast("Data dimuat dari penyimpanan lokal", "success");
             } else { allData = [...defaultData]; }
         } catch (e) { allData = [...defaultData]; }
     } else { allData = [...defaultData]; }
@@ -998,7 +998,8 @@ function closeConfirmDelete() {
     document.getElementById("confirmDeleteModal").classList.remove("active");
 }
 function confirmDeleteAll() {
-    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); selectedNiks.clear(); localStorage.removeItem(STORAGE_KEY);
+    allData = []; newlyUploadedNiks.clear(); duplicateNikSet.clear(); selectedNiks.clear();
+    saveToStorage(); // simpan status kosong secara eksplisit, agar tidak kembali ke data contoh saat refresh
     closeConfirmDelete(); applyFilter(); updateStats();
     showToast("Semua data berhasil dihapus", "success");
 }
