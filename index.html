@@ -970,6 +970,19 @@ function detectGenderFromNik(nik) {
     return tgl >= 40 ? "P" : "L";
 }
 
+function getKpjYearLabel(kpjList) {
+    const years = [];
+    kpjList.forEach(k => {
+        const prefix = k.substring(0, 2);
+        if (/^\d{2}$/.test(prefix)) {
+            const num = parseInt(prefix, 10);
+            if (num >= 16 && num <= 26) years.push(num);
+        }
+    });
+    if (years.length === 0) return null;
+    const latest = Math.max(...years);
+    return "20" + String(latest).padStart(2, "0");
+}
 function buildCopyText(row, index) {
     const jmlKartu = parseInt(row["Jml Kartu"]) || 0;
     const saldo = formatSaldoCopy(row["Total Saldo"]);
@@ -978,6 +991,7 @@ function buildCopyText(row, index) {
     const iuranDate = convertIuranToDate(row["Iuran Terakhir"] || "");
     const jk = detectGenderFromNik(row["NIK"]);
     const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
+    const kpjYear = getKpjYearLabel(kpjList);
 
     let tunggalSensor;
     if (jmlKartu === 1) {
@@ -994,6 +1008,7 @@ function buildCopyText(row, index) {
         field("JK", jk),
         field("LAHIR", row["Tgl Lahir"] || ""),
         "",
+        kpjYear ? `KPJ ${kpjYear}` : null,
         tunggalSensor,
         field("KERJA", "isimanual"),
         field("SALDO", saldo),
@@ -1002,7 +1017,7 @@ function buildCopyText(row, index) {
         field("NAMA", row["Nama"] || ""),
         field("EMAIL", row["Email"] || ""),
         field("PW", row["Password"] || "")
-    ].join("\n");
+    ].filter(line => line !== null).join("\n");
 }
 function quickCopy(idx) {
     const row = filteredData[idx];
@@ -1356,15 +1371,16 @@ function finishProcessFiles(allParsed, fileCount) {
     if (allParsed.length > 0) {
         const existingNik = new Set(allData.map(d => d["NIK"]));
         let added = 0;
-        let dupRemoved = 0;
+        let skipped = 0;
         const newRows = [];
         allParsed.forEach(row => {
-            if (!existingNik.has(row["NIK"])) {
+            const nik = row["NIK"];
+            if (!existingNik.has(nik)) {
                 newRows.push(row);
-                existingNik.add(row["NIK"]);
+                existingNik.add(nik);
                 added++;
             } else {
-                dupRemoved++;
+                skipped++; // NIK sudah ada -> data lama dipertahankan, tidak ditimpa
             }
         });
         allData = newRows.concat(allData);
@@ -1374,7 +1390,7 @@ function finishProcessFiles(allParsed, fileCount) {
         saveToStorage();
         applyFilter();
         let msg = `✅ ${added} data baru dari ${fileCount} file`;
-        if (dupRemoved > 0) msg += ` — ${dupRemoved} duplikat otomatis dihapus`;
+        if (skipped > 0) msg += ` — ${skipped} NIK sudah ada, dilewati (data lama tidak ditimpa)`;
         showToast(msg, "success");
     } else {
         showToast("File CSV kosong atau format tidak valid", "error");
