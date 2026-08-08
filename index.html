@@ -442,27 +442,87 @@ const colConfig = [
     { key: 'Keterangan', label: 'Keterangan', width: '160px' }
 ];
 
-function init() {
-    visibleCols = colConfig.map(c => c.key);
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved !== null) {
-        let parsed = null;
-        let parseFailed = false;
+// ==== Penyimpanan utama pakai IndexedDB (kapasitas jauh lebih besar dari localStorage) ====
+const IDB_NAME = "bpjs_dashboard_store";
+const IDB_STORE = "kv";
+function idbOpen() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) { reject(new Error("IndexedDB tidak didukung browser ini")); return; }
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+async function idbGet(key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const req = tx.objectStore(IDB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+async function idbSet(key, value) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(value, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+    });
+}
+async function saveToStorage() {
+    try {
+        await idbSet(STORAGE_KEY, allData);
+    } catch (e) {
+        console.warn("Gagal menyimpan ke IndexedDB, coba localStorage sebagai cadangan", e);
         try {
-            parsed = JSON.parse(saved);
-        } catch (e) {
-            console.warn("Gagal membaca data tersimpan (rusak/format lama)", e);
-            parseFailed = true;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+        } catch (e2) {
+            console.warn("Gagal menyimpan ke localStorage juga", e2);
+            showToast("⚠️ Penyimpanan otomatis gagal total (kemungkinan penyimpanan browser penuh/tidak didukung). Segera klik 'Backup Data' agar data tidak hilang!", "error");
         }
-        if (!parseFailed && Array.isArray(parsed)) {
-            allData = parsed; // termasuk array kosong jika sengaja dikosongkan lewat "Hapus Semua"
-            if (parsed.length > 0) {
-                try { showToast("Data dimuat dari penyimpanan lokal", "success"); } catch (e) { console.warn("Toast gagal tampil", e); }
+    }
+}
+async function init() {
+    visibleCols = colConfig.map(c => c.key);
+    let loaded = null;
+    try {
+        loaded = await idbGet(STORAGE_KEY);
+    } catch (e) {
+        console.warn("IndexedDB tidak tersedia/gagal dibaca, cek localStorage", e);
+    }
+    if (Array.isArray(loaded)) {
+        allData = loaded; // termasuk array kosong jika sengaja dikosongkan lewat "Hapus Semua"
+        if (loaded.length > 0) {
+            try { showToast("Data dimuat dari penyimpanan lokal", "success"); } catch (e) { console.warn("Toast gagal tampil", e); }
+        }
+    } else {
+        // Fallback / migrasi dari localStorage (versi penyimpanan sebelumnya)
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved !== null) {
+            let parsed = null;
+            let parseFailed = false;
+            try {
+                parsed = JSON.parse(saved);
+            } catch (e) {
+                console.warn("Gagal membaca data tersimpan (rusak/format lama)", e);
+                parseFailed = true;
+            }
+            if (!parseFailed && Array.isArray(parsed)) {
+                allData = parsed;
+                if (parsed.length > 0) {
+                    try { showToast("Data dimuat dari penyimpanan lokal", "success"); } catch (e) { console.warn("Toast gagal tampil", e); }
+                }
+                saveToStorage(); // migrasi otomatis ke IndexedDB supaya lebih tahan lama ke depannya
+            } else {
+                allData = [...defaultData];
             }
         } else {
             allData = [...defaultData];
         }
-    } else { allData = [...defaultData]; }
+    }
     filter1M = false;
     filterIuran2017 = false;
     document.getElementById("btnShowAll").className = "btn btn-primary";
@@ -484,13 +544,6 @@ function updateDuplicateNik() {
     });
 }
 
-function saveToStorage() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); }
-    catch (e) {
-        console.warn("Gagal menyimpan ke localStorage", e);
-        showToast("⚠️ Penyimpanan otomatis gagal (penuh/tidak didukung browser). Segera klik 'Backup Data' agar data tidak hilang!", "error");
-    }
-}
 function mergeRows(parsedRows) {
     const existingNik = new Set(allData.map(d => d["NIK"]));
     let added = 0;
@@ -1531,9 +1584,9 @@ function toggleTheme() {
         icon.className = "fas fa-sun";
     }
 }
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     try {
-        init();
+        await init();
     } catch (err) {
         console.error("Gagal inisialisasi dashboard:", err);
         showFatalErrorBanner(err);
