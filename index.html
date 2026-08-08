@@ -446,13 +446,22 @@ function init() {
     visibleCols = colConfig.map(c => c.key);
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved !== null) {
+        let parsed = null;
+        let parseFailed = false;
         try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) {
-                allData = parsed; // termasuk array kosong jika sengaja dikosongkan lewat "Hapus Semua"
-                if (parsed.length > 0) showToast("Data dimuat dari penyimpanan lokal", "success");
-            } else { allData = [...defaultData]; }
-        } catch (e) { allData = [...defaultData]; }
+            parsed = JSON.parse(saved);
+        } catch (e) {
+            console.warn("Gagal membaca data tersimpan (rusak/format lama)", e);
+            parseFailed = true;
+        }
+        if (!parseFailed && Array.isArray(parsed)) {
+            allData = parsed; // termasuk array kosong jika sengaja dikosongkan lewat "Hapus Semua"
+            if (parsed.length > 0) {
+                try { showToast("Data dimuat dari penyimpanan lokal", "success"); } catch (e) { console.warn("Toast gagal tampil", e); }
+            }
+        } else {
+            allData = [...defaultData];
+        }
     } else { allData = [...defaultData]; }
     filter1M = false;
     filterIuran2017 = false;
@@ -769,9 +778,9 @@ function updateStats() {
     document.getElementById("statDuplicate").textContent = duplicateNikSet.size;
     const dupTrend = document.getElementById("dupTrend");
     if (dupTrend) {
-        dupTrend.innerHTML = filterDuplicate 
-            ? '<i class="fas fa-filter"></i> Filter aktif' 
-            : '<i class="fas fa-clone"></i> Klik untuk filter';
+        dupTrend.innerHTML = duplicateNikSet.size > 0
+            ? '<i class="fas fa-clone"></i> Siap dihapus'
+            : '<i class="fas fa-check-circle"></i> Tidak ada duplikat';
     }
 }
 function formatRupiah(num) {
@@ -1522,7 +1531,27 @@ function toggleTheme() {
         icon.className = "fas fa-sun";
     }
 }
-window.addEventListener("DOMContentLoaded", init);
+window.addEventListener("DOMContentLoaded", () => {
+    try {
+        init();
+    } catch (err) {
+        console.error("Gagal inisialisasi dashboard:", err);
+        showFatalErrorBanner(err);
+    }
+});
+window.addEventListener("error", (e) => {
+    console.error("Uncaught error:", e.error || e.message);
+    showFatalErrorBanner(e.error || new Error(e.message));
+});
+function showFatalErrorBanner(err) {
+    if (document.getElementById("fatalErrorBanner")) return;
+    const banner = document.createElement("div");
+    banner.id = "fatalErrorBanner";
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:14px 16px;z-index:99999;font-size:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.3);";
+    banner.innerHTML = `⚠️ Terjadi kesalahan saat memuat halaman: ${(err && err.message) ? err.message : "tidak diketahui"}. Coba muat ulang. Kalau data hilang, gunakan <b>Pulihkan Backup</b> setelah halaman normal kembali.
+        <button onclick="location.reload()" style="margin-left:10px;background:#fff;color:#dc2626;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-weight:600;">Muat Ulang</button>`;
+    document.body.prepend(banner);
+}
 </script>
 </body>
 </html>
