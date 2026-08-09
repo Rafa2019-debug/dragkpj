@@ -173,6 +173,11 @@
         .detail-row.active { display: table-row; }
         .detail-row td { padding: 0; background: var(--bg) !important; }
         .detail-content { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .alamat-input {
+            width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.9rem; font-family: inherit; box-sizing: border-box; background: var(--card);
+        }
+        .alamat-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
         .detail-item { background: var(--card); padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
         .detail-item .label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
         .detail-item .value { font-weight: 600; color: var(--text); word-break: break-all; }
@@ -743,8 +748,8 @@ function renderTable() {
         const isNew = newlyUploadedNiks.has(row["NIK"]);
         const nikVal = row["NIK"] || "";
         const isSelected = selectedNiks.has(nikVal);
-        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''} ${isSelected ? 'row-selected' : ''}">`;
-        html += `<td><input type="checkbox" class="row-check" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${nikVal}', this)"></td>`;
+        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''} ${isSelected ? 'row-selected' : ''}" onclick="toggleDetailRow(${globalIdx})" style="cursor:pointer;">`;
+        html += `<td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${nikVal}', this)"></td>`;
         html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
         colConfig.forEach(col => {
             if (!visibleCols.includes(col.key)) return;
@@ -759,9 +764,13 @@ function renderTable() {
             else if (col.format === "status") html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
             else html += `<td style="${style}">${val}</td>`;
         });
-        html += `<td><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
+        html += `<td onclick="event.stopPropagation()"><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
         html += '</tr>';
         html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 3}"><div class="detail-content">` +
+            `<div class="detail-item" style="grid-column:1/-1;">
+                <div class="label">Alamat (opsional — dipakai sebagai baris pertama hasil salin, menggantikan nomor urut)</div>
+                <input type="text" class="alamat-input" value="${(row["Alamat"] || "").replace(/"/g, "&quot;")}" placeholder="Contoh: TANGERANG, PERIUK, GEBANG RAYA" onclick="event.stopPropagation()" onchange="updateAlamat(${globalIdx}, this.value)">
+            </div>` +
             renderDetailItem("NIK", row["NIK"]) +
             renderDetailItem("Nama Lengkap", row["Nama"]) +
             renderDetailItem("Tanggal Lahir", row["Tgl Lahir"]) +
@@ -781,6 +790,16 @@ function renderTable() {
     });
     tbody.innerHTML = html;
     updateSelectedUI();
+}
+function toggleDetailRow(globalIdx) {
+    const detailRow = document.getElementById(`detail-${globalIdx}`);
+    if (detailRow) detailRow.classList.toggle("active");
+}
+function updateAlamat(globalIdx, value) {
+    const row = filteredData[globalIdx];
+    if (!row) return;
+    row["Alamat"] = value.trim();
+    saveToStorage();
 }
 function renderDetailItem(label, value) {
     return `<div class="detail-item"><div class="label">${label}</div><div class="value">${value || '-'}</div></div>`;
@@ -1133,8 +1152,10 @@ function buildCopyText(row, index) {
         tunggalSensor = "SENSOR " + sensorParts.join(" ") + " JMO";
     }
 
+    const firstLine = (row["Alamat"] && row["Alamat"].trim()) ? row["Alamat"].trim() : `${index + 1}.`;
+
     return [
-        `${index + 1}.`,
+        firstLine,
         "",
         field("NIK", row["NIK"] || ""),
         field("JK", jk),
