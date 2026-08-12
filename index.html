@@ -1153,8 +1153,10 @@ function buildCopyText(row, index) {
     }
 
     const firstLine = (row["Alamat"] && row["Alamat"].trim()) ? row["Alamat"].trim() : `${index + 1}.`;
+    const hasEmail = !!(row["Email"] && row["Email"].trim().length > 0);
 
     return [
+        hasEmail ? "SUDAH TERDAFTAR" : null,
         firstLine,
         "",
         field("NIK", row["NIK"] || ""),
