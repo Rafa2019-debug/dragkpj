@@ -657,18 +657,13 @@ function handleUploadSaldo(e) {
     const file = e.target.files[0];
     if (!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
+    const reader = new FileReader();
     if (ext === "csv") {
-        const reader = new FileReader();
         reader.onload = (ev) => parseSaldoCSV(ev.target.result, file.name);
         reader.readAsText(file);
     } else {
-        const reader = new FileReader();
         reader.onload = (ev) => parseSaldoXLSX(ev.target.result, file.name);
-        reader.readAsArrayBuffer(ev.target.result);
-        // pakai XLSX library
-        const r2 = new FileReader();
-        r2.onload = (ev2) => parseSaldoXLSX(ev2.target.result, file.name);
-        r2.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(file);
     }
     e.target.value = "";
 }
