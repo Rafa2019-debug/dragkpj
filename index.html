@@ -713,6 +713,7 @@ function processSaldoRows(rows, filename) {
     const firstRow = rows[0] || {};
     const keys = Object.keys(firstRow);
     const nikKey   = keys.find(k => /NIK/i.test(k)) || keys[0];
+    const kpjKey   = keys.find(k => /^KPJ$/i.test(k) || /^list.*kpj/i.test(k) || /^kpj$/i.test(k));
     const jmlKey   = keys.find(k => /jumlah|jml|kartu/i.test(k));
     const saldoKey = keys.find(k => /saldo/i.test(k));
 
@@ -743,40 +744,43 @@ function processSaldoRows(rows, filename) {
         const existing = dataMap.get(nik);
         const jml   = jmlKey   ? String(r[jmlKey]   || "").trim() : "";
         const saldo = saldoKey ? cleanSaldo(r[saldoKey]) : "";
+        const kpj   = kpjKey   ? String(r[kpjKey]   || "").trim() : "";
         if (existing) {
-            matched.push({ nik, jml, saldo, existing });
+            matched.push({ nik, jml, saldo, kpj, existing });
         } else {
-            unmatched.push({ nik, jml, saldo });
+            unmatched.push({ nik, jml, saldo, kpj });
         }
     });
 
     __pendingSaldoUpdates = matched;
-    showSaldoResult(matched, unmatched, filename, nikKey, jmlKey, saldoKey);
+    showSaldoResult(matched, unmatched, filename, nikKey, kpjKey, jmlKey, saldoKey);
 }
-function showSaldoResult(matched, unmatched, filename, nikKey, jmlKey, saldoKey) {
+function showSaldoResult(matched, unmatched, filename, nikKey, kpjKey, jmlKey, saldoKey) {
     document.getElementById("saldoResultTitle").textContent = filename;
     document.getElementById("saldoResultSummary").innerHTML =
         `<span style="color:var(--success);font-weight:600;">✅ ${matched.length} NIK cocok</span> &nbsp;|&nbsp; `+
         `<span style="color:var(--danger);font-weight:600;">❌ ${unmatched.length} NIK tidak ditemukan</span> &nbsp;|&nbsp; `+
-        `Kolom: <b>${nikKey}</b>${jmlKey ? ` · <b>${jmlKey}</b>` : ""}${saldoKey ? ` · <b>${saldoKey}</b>` : ""}`;
+        `Kolom: <b>${nikKey}</b>${kpjKey ? ` · <b>${kpjKey}</b>` : ""}${jmlKey ? ` · <b>${jmlKey}</b>` : ""}${saldoKey ? ` · <b>${saldoKey}</b>` : ""}`;
 
     const thead = document.getElementById("saldoResultHead");
-    thead.innerHTML = `<tr><th>NIK</th><th>Nama</th>${jmlKey ? "<th>Jml Kartu (baru)</th>" : ""}${saldoKey ? "<th>Saldo (baru)</th>" : ""}<th>Status</th></tr>`;
+    thead.innerHTML = `<tr><th>NIK</th><th>Nama</th>${kpjKey ? "<th>KPJ (baru)</th>" : ""}${jmlKey ? "<th>Jml Kartu (baru)</th>" : ""}${saldoKey ? "<th>Saldo (baru)</th>" : ""}<th>Status</th></tr>`;
 
     let html = "";
-    matched.forEach(({nik, jml, saldo, existing}) => {
+    matched.forEach(({nik, jml, saldo, kpj, existing}) => {
         html += `<tr class="match-row">
             <td>${nik}</td>
             <td>${existing["Nama"] || "-"}</td>
+            ${kpjKey ? `<td>${kpj || "-"}</td>` : ""}
             ${jmlKey ? `<td>${jml || "-"}</td>` : ""}
             ${saldoKey ? `<td>${saldo || "-"}</td>` : ""}
             <td style="color:var(--success)"><i class="fas fa-check-circle"></i> Cocok</td>
         </tr>`;
     });
-    unmatched.forEach(({nik, jml, saldo}) => {
+    unmatched.forEach(({nik, jml, saldo, kpj}) => {
         html += `<tr class="no-match-row">
             <td>${nik}</td>
             <td>—</td>
+            ${kpjKey ? `<td>${kpj || "-"}</td>` : ""}
             ${jmlKey ? `<td>${jml || "-"}</td>` : ""}
             ${saldoKey ? `<td>${saldo || "-"}</td>` : ""}
             <td><i class="fas fa-times-circle"></i> Tidak ditemukan</td>
@@ -792,9 +796,12 @@ function closeSaldoResult() {
 }
 function applySaldoUpdate() {
     let updated = 0;
-    __pendingSaldoUpdates.forEach(({nik, jml, saldo, existing}) => {
-        if (jml)   existing["Jml Kartu"]   = jml;
-        if (saldo) existing["Total Saldo"] = saldo;
+    __pendingSaldoUpdates.forEach(({nik, jml, saldo, kpj, existing}) => {
+        if (jml)   existing["Jml Kartu"]    = jml;
+        if (saldo) existing["Total Saldo"]  = saldo;
+        if (kpj && !(existing["List KPJ (PU)"] && existing["List KPJ (PU)"].trim())) {
+            existing["List KPJ (PU)"] = kpj; // isi hanya jika KPJ masih kosong
+        }
         updated++;
     });
     saveToStorage();
@@ -1456,9 +1463,14 @@ function buildCopyText(row, index) {
     const kpjYear = getKpjYearLabel(kpjList);
 
     let tunggalSensor;
-    if (jmlKartu === 1) {
+    if (jmlKartu <= 1) {
         tunggalSensor = "TUNGGAL";
+    } else if (kpjList.length === 1) {
+        // Hanya ada 1 KPJ padahal jumlah kartu lebih dari 1
+        // (kasus data dari upload saldo yang KPJ lainnya tidak diketahui)
+        tunggalSensor = "SENSOR " + (jmlKartu - 1) + " JMO";
     } else {
+        // KPJ lengkap — tampilkan prefix 2 digit tiap KPJ tambahan
         const sensorParts = kpjList.slice(1).map(k => k.substring(0, 2) + "**");
         tunggalSensor = "SENSOR " + sensorParts.join(" ") + " JMO";
     }
