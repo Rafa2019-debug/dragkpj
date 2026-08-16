@@ -338,10 +338,8 @@
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-outline" onclick="exportBackupJSON()"><i class="fas fa-database"></i> Backup Data</button>
             <button class="btn btn-outline" onclick="triggerRestoreBackup()"><i class="fas fa-upload"></i> Pulihkan Backup</button>
-            <button class="btn btn-outline" onclick="triggerUploadSaldo()" style="border-color:var(--success);color:var(--success);"><i class="fas fa-file-invoice-dollar"></i> Upload Saldo</button>
             <input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none" onchange="handleRestoreBackup(event)">
-            <input type="file" id="uploadSaldoInput" accept=".xlsx,.xls" style="display:none" onchange="handleUploadSaldo(event)">
-            <button class="btn btn-outline" onclick="triggerUploadSaldo()"><i class="fas fa-coins"></i> Upload Saldo</button>
+            <button class="btn btn-outline" onclick="triggerUploadSaldo()" style="border-color:var(--success);color:var(--success);"><i class="fas fa-file-invoice-dollar"></i> Upload Saldo</button>
             <input type="file" id="saldoFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleUploadSaldo(event)">
             <div class="column-toggle" id="columnToggleWrap">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
@@ -383,16 +381,6 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeConfirmDeleteSelected()">Batal</button>
                 <button class="btn btn-danger" onclick="confirmDeleteSelected()"><i class="fas fa-trash-alt"></i> Ya, Hapus</button>
-            </div>
-        </div>
-    </div>
-    <div class="modal-overlay" id="uploadSaldoResultModal">
-        <div class="modal-box" style="max-width:460px;">
-            <div class="modal-header"><h3><i class="fas fa-file-invoice-dollar" style="color:var(--success)"></i> Hasil Upload Saldo</h3><button class="modal-close" onclick="closeUploadSaldoResult()"><i class="fas fa-times"></i></button></div>
-            <div class="modal-body" id="uploadSaldoResultBody"></div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeUploadSaldoResult()">Tutup</button>
-                <button class="btn btn-primary" id="btnFilterSaldoResult" onclick="applyUploadSaldoFilter()"><i class="fas fa-filter"></i> Tampilkan Data Cocok</button>
             </div>
         </div>
     </div>
@@ -808,105 +796,6 @@ function applySaldoUpdate() {
     closeSaldoResult();
     applyFilter();
     showToast(`✅ ${updated} data berhasil diupdate dari file saldo`, "success");
-}
-function triggerUploadSaldo() {
-    document.getElementById("uploadSaldoInput").click();
-}
-function handleUploadSaldo(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (typeof XLSX === "undefined") { showToast("Library Excel belum siap, coba lagi", "error"); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        try {
-            const wb = XLSX.read(ev.target.result, { type: "array" });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-            // Normalisasi header — cari kolom NIK, Jumlah Kartu, Saldo
-            const nikKey = Object.keys(rows[0] || {}).find(k => /^nik$/i.test(k.trim()));
-            const kartuKey = Object.keys(rows[0] || {}).find(k => /jumlah.*kartu|jml.*kartu/i.test(k.trim()));
-            const saldoKey = Object.keys(rows[0] || {}).find(k => /saldo/i.test(k.trim()));
-
-            if (!nikKey) { showToast("Kolom NIK tidak ditemukan di file", "error"); return; }
-
-            // Buat map NIK dari file upload
-            const saldoMap = new Map();
-            rows.forEach(row => {
-                const nik = String(row[nikKey] || "").trim().padStart(16, "0").replace(/\.0$/, "");
-                const kartu = kartuKey && row[kartuKey] !== "" ? String(row[kartuKey]).trim() : null;
-                const saldo = saldoKey && row[saldoKey] !== "" && !isNaN(parseFloat(row[saldoKey])) ? parseFloat(row[saldoKey]) : null;
-                if (nik && nik !== "0000000000000000") saldoMap.set(nik, { kartu, saldo });
-            });
-
-            let cocok = 0, diUpdate = 0, tidakAda = 0;
-            __lastSaldoMatchedNiks = new Set();
-
-            allData.forEach(row => {
-                const nik = String(row["NIK"] || "").trim();
-                if (saldoMap.has(nik)) {
-                    cocok++;
-                    __lastSaldoMatchedNiks.add(nik);
-                    const src = saldoMap.get(nik);
-                    let updated = false;
-                    // Hanya isi jika data utama kosong
-                    if (src.kartu !== null && (!row["Jml Kartu"] || row["Jml Kartu"] === "" || row["Jml Kartu"] === "0")) {
-                        row["Jml Kartu"] = src.kartu;
-                        updated = true;
-                    }
-                    if (src.saldo !== null && (!row["Total Saldo"] || row["Total Saldo"] === "" || parseFloat(row["Total Saldo"]) === 0)) {
-                        row["Total Saldo"] = src.saldo;
-                        updated = true;
-                    }
-                    if (updated) diUpdate++;
-                } else {
-                    tidakAda++;
-                }
-            });
-
-            saveToStorage();
-
-            // Tampilkan modal hasil
-            document.getElementById("uploadSaldoResultBody").innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div style="background:#d1fae5;border-radius:10px;padding:14px;text-align:center;">
-                            <div style="font-size:1.6rem;font-weight:700;color:#065f46;">${cocok}</div>
-                            <div style="font-size:0.85rem;color:#065f46;">NIK cocok</div>
-                        </div>
-                        <div style="background:#dbeafe;border-radius:10px;padding:14px;text-align:center;">
-                            <div style="font-size:1.6rem;font-weight:700;color:var(--primary);">${diUpdate}</div>
-                            <div style="font-size:0.85rem;color:var(--primary);">Data diperbarui</div>
-                        </div>
-                    </div>
-                    <p style="font-size:0.9rem;color:var(--text-secondary);margin:0;">
-                        ${tidakAda > 0 ? `${tidakAda} NIK dari file tidak ditemukan di data utama.` : "Semua NIK dari file ditemukan di data utama."}<br>
-                        Data yang sudah terisi sebelumnya <strong>tidak ditimpa</strong>.
-                    </p>
-                </div>`;
-            document.getElementById("uploadSaldoResultModal").classList.add("active");
-            applyFilter();
-        } catch (err) {
-            console.error(err);
-            showToast("Gagal membaca file Excel: " + err.message, "error");
-        }
-        e.target.value = "";
-    };
-    reader.readAsArrayBuffer(file);
-}
-function closeUploadSaldoResult() {
-    document.getElementById("uploadSaldoResultModal").classList.remove("active");
-}
-function applyUploadSaldoFilter() {
-    closeUploadSaldoResult();
-    if (__lastSaldoMatchedNiks.size === 0) return;
-    // Filter hanya tampilkan NIK yang cocok
-    filteredData = allData.filter(r => __lastSaldoMatchedNiks.has(String(r["NIK"] || "").trim()));
-    currentPage = 1;
-    renderTable();
-    renderPagination();
-    updateStats();
-    showToast(`Menampilkan ${filteredData.length} data yang NIK-nya cocok dengan file saldo`, "success");
 }
 function triggerRestoreBackup() {
     document.getElementById("restoreFileInput").click();
