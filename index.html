@@ -163,6 +163,10 @@
         input.row-check, input#selectAllCheckbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
         tr.row-selected td { background: rgba(37,99,235,0.09) !important; }
         .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+        #saldoResultBody tr td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        #saldoResultBody tr.match-row td { background: #f0fdf4; }
+        #saldoResultBody tr.no-match-row td { background: #fef2f2; color: #991b1b; }
+        #saldoResultHead th { padding: 8px 12px; text-align:left; font-size:0.8rem; color:var(--text-secondary); border-bottom: 2px solid var(--border); }
         .saldo { font-weight: 700; color: var(--success); }
         .status-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -334,7 +338,11 @@
             <button class="btn btn-success" onclick="openExportOrderModal()"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-outline" onclick="exportBackupJSON()"><i class="fas fa-database"></i> Backup Data</button>
             <button class="btn btn-outline" onclick="triggerRestoreBackup()"><i class="fas fa-upload"></i> Pulihkan Backup</button>
+            <button class="btn btn-outline" onclick="triggerUploadSaldo()" style="border-color:var(--success);color:var(--success);"><i class="fas fa-file-invoice-dollar"></i> Upload Saldo</button>
             <input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none" onchange="handleRestoreBackup(event)">
+            <input type="file" id="uploadSaldoInput" accept=".xlsx,.xls" style="display:none" onchange="handleUploadSaldo(event)">
+            <button class="btn btn-outline" onclick="triggerUploadSaldo()"><i class="fas fa-coins"></i> Upload Saldo</button>
+            <input type="file" id="saldoFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleUploadSaldo(event)">
             <div class="column-toggle" id="columnToggleWrap">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
                 <div class="column-menu" id="columnMenu"></div>
@@ -375,6 +383,48 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeConfirmDeleteSelected()">Batal</button>
                 <button class="btn btn-danger" onclick="confirmDeleteSelected()"><i class="fas fa-trash-alt"></i> Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="uploadSaldoResultModal">
+        <div class="modal-box" style="max-width:460px;">
+            <div class="modal-header"><h3><i class="fas fa-file-invoice-dollar" style="color:var(--success)"></i> Hasil Upload Saldo</h3><button class="modal-close" onclick="closeUploadSaldoResult()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body" id="uploadSaldoResultBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeUploadSaldoResult()">Tutup</button>
+                <button class="btn btn-primary" id="btnFilterSaldoResult" onclick="applyUploadSaldoFilter()"><i class="fas fa-filter"></i> Tampilkan Data Cocok</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="downloadNameModal">
+        <div class="modal-box" style="max-width:420px;">
+            <div class="modal-header"><h3><i class="fas fa-file-download"></i> Nama File Download</h3><button class="modal-close" onclick="closeDownloadNameModal()"><i class="fas fa-times"></i></button></div>
+            <div class="modal-body">
+                <p style="margin-bottom:10px;color:var(--text-secondary);font-size:0.9rem;">Ketik nama file yang diinginkan (tanpa ekstensi):</p>
+                <input type="text" id="downloadNameInput" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.95rem;box-sizing:border-box;" placeholder="Contoh: data-peserta-juni-2026" onkeydown="if(event.key==='Enter')confirmDownloadName()">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeDownloadNameModal()">Batal</button>
+                <button class="btn btn-primary" onclick="confirmDownloadName()"><i class="fas fa-download"></i> Download</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="saldoResultModal" style="z-index:3000;">
+        <div class="modal-box" style="max-width:700px;max-height:85vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <h3><i class="fas fa-coins"></i> Hasil Upload Saldo — <span id="saldoResultTitle"></span></h3>
+                <button class="modal-close" onclick="closeSaldoResult()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border);font-size:0.9rem;" id="saldoResultSummary"></div>
+            <div style="overflow-y:auto;flex:1;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead id="saldoResultHead" style="position:sticky;top:0;background:var(--card);z-index:1;"></thead>
+                    <tbody id="saldoResultBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeSaldoResult()">Tutup</button>
+                <button class="btn btn-primary" onclick="applySaldoUpdate()" id="btnApplySaldo"><i class="fas fa-check"></i> Terapkan Update</button>
             </div>
         </div>
     </div>
@@ -572,23 +622,284 @@ function mergeRows(parsedRows) {
     applyFilter();
     return { added, skipped };
 }
+let __pendingDownload = null;
+let __lastSaldoMatchedNiks = new Set();
+function openDownloadNameModal(defaultName, onConfirm) {
+    __pendingDownload = onConfirm;
+    const input = document.getElementById("downloadNameInput");
+    input.value = defaultName;
+    document.getElementById("downloadNameModal").classList.add("active");
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+}
+function closeDownloadNameModal() {
+    document.getElementById("downloadNameModal").classList.remove("active");
+    __pendingDownload = null;
+}
+function confirmDownloadName() {
+    const name = document.getElementById("downloadNameInput").value.trim();
+    if (!name) { document.getElementById("downloadNameInput").focus(); return; }
+    closeDownloadNameModal();
+    if (__pendingDownload) __pendingDownload(name);
+}
 function exportBackupJSON() {
     if (allData.length === 0) { showToast("Tidak ada data untuk dibackup", "error"); return; }
-    try {
-        const blob = new Blob([JSON.stringify(allData)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-        a.href = url;
-        a.download = `backup-data-peserta-${ts}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`✅ Backup ${allData.length} data berhasil diunduh — simpan file ini baik-baik`, "success");
-    } catch (e) {
-        showToast("Gagal membuat file backup", "error");
+    const ts = new Date().toISOString().slice(0, 10);
+    openDownloadNameModal(`backup-data-peserta-${ts}`, (name) => {
+        try {
+            const blob = new Blob([JSON.stringify(allData)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${name}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`✅ Backup ${allData.length} data berhasil diunduh — simpan file ini baik-baik`, "success");
+        } catch (e) {
+            showToast("Gagal membuat file backup", "error");
+        }
+    });
+}
+function triggerUploadSaldo() {
+    document.getElementById("saldoFileInput").click();
+}
+let __pendingSaldoUpdates = [];
+function handleUploadSaldo(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (ext === "csv") {
+        const reader = new FileReader();
+        reader.onload = (ev) => parseSaldoCSV(ev.target.result, file.name);
+        reader.readAsText(file);
+    } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => parseSaldoXLSX(ev.target.result, file.name);
+        reader.readAsArrayBuffer(ev.target.result);
+        // pakai XLSX library
+        const r2 = new FileReader();
+        r2.onload = (ev2) => parseSaldoXLSX(ev2.target.result, file.name);
+        r2.readAsArrayBuffer(file);
     }
+    e.target.value = "";
+}
+function parseSaldoCSV(text, filename) {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) { showToast("File CSV saldo kosong atau tidak valid", "error"); return; }
+    const header = lines[0].split(",").map(h => h.replace(/"/g,"").trim());
+    const rows = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.replace(/"/g,"").trim());
+        const obj = {};
+        header.forEach((h, i) => obj[h] = cols[i] || "");
+        return obj;
+    });
+    processSaldoRows(rows, filename);
+}
+function parseSaldoXLSX(arrayBuffer, filename) {
+    if (typeof XLSX === "undefined") { showToast("Library Excel belum siap, coba lagi sebentar", "error"); return; }
+    try {
+        const wb = XLSX.read(arrayBuffer, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+        processSaldoRows(rows, filename);
+    } catch(err) {
+        showToast("Gagal membaca file: " + err.message, "error");
+    }
+}
+function normNik(nik) { return String(nik || "").trim(); }
+function processSaldoRows(rows, filename) {
+    // Deteksi kolom NIK, Jumlah Kartu, Saldo
+    const firstRow = rows[0] || {};
+    const keys = Object.keys(firstRow);
+    const nikKey   = keys.find(k => /NIK/i.test(k)) || keys[0];
+    const jmlKey   = keys.find(k => /jumlah|jml|kartu/i.test(k));
+    const saldoKey = keys.find(k => /saldo/i.test(k));
+
+    // Bersihkan format saldo: "Rp5.241.620" / "5.241.620" / "5241620" -> angka bersih
+    function cleanSaldo(raw) {
+        if (!raw && raw !== 0) return "";
+        let s = String(raw).replace(/Rp/gi, "").trim();
+        // Kalau ada koma sebagai desimal (1.234,56) -> konversi ke 1234.56
+        if (/\d+\.\d{3},\d{2}$/.test(s)) {
+            s = s.replace(/\./g, "").replace(",", ".");
+        } else {
+            // Format titik sebagai pemisah ribuan saja (1.234.567) -> 1234567
+            s = s.replace(/\./g, "");
+        }
+        return s.trim();
+    }
+
+    // Buat map NIK -> data dari allData
+    const dataMap = new Map();
+    allData.forEach(row => dataMap.set(normNik(row["NIK"]), row));
+
+    const matched = [];
+    const unmatched = [];
+
+    rows.forEach(r => {
+        const nik = normNik(r[nikKey]);
+        if (!nik) return;
+        const existing = dataMap.get(nik);
+        const jml   = jmlKey   ? String(r[jmlKey]   || "").trim() : "";
+        const saldo = saldoKey ? cleanSaldo(r[saldoKey]) : "";
+        if (existing) {
+            matched.push({ nik, jml, saldo, existing });
+        } else {
+            unmatched.push({ nik, jml, saldo });
+        }
+    });
+
+    __pendingSaldoUpdates = matched;
+    showSaldoResult(matched, unmatched, filename, nikKey, jmlKey, saldoKey);
+}
+function showSaldoResult(matched, unmatched, filename, nikKey, jmlKey, saldoKey) {
+    document.getElementById("saldoResultTitle").textContent = filename;
+    document.getElementById("saldoResultSummary").innerHTML =
+        `<span style="color:var(--success);font-weight:600;">✅ ${matched.length} NIK cocok</span> &nbsp;|&nbsp; `+
+        `<span style="color:var(--danger);font-weight:600;">❌ ${unmatched.length} NIK tidak ditemukan</span> &nbsp;|&nbsp; `+
+        `Kolom: <b>${nikKey}</b>${jmlKey ? ` · <b>${jmlKey}</b>` : ""}${saldoKey ? ` · <b>${saldoKey}</b>` : ""}`;
+
+    const thead = document.getElementById("saldoResultHead");
+    thead.innerHTML = `<tr><th>NIK</th><th>Nama</th>${jmlKey ? "<th>Jml Kartu (baru)</th>" : ""}${saldoKey ? "<th>Saldo (baru)</th>" : ""}<th>Status</th></tr>`;
+
+    let html = "";
+    matched.forEach(({nik, jml, saldo, existing}) => {
+        html += `<tr class="match-row">
+            <td>${nik}</td>
+            <td>${existing["Nama"] || "-"}</td>
+            ${jmlKey ? `<td>${jml || "-"}</td>` : ""}
+            ${saldoKey ? `<td>${saldo || "-"}</td>` : ""}
+            <td style="color:var(--success)"><i class="fas fa-check-circle"></i> Cocok</td>
+        </tr>`;
+    });
+    unmatched.forEach(({nik, jml, saldo}) => {
+        html += `<tr class="no-match-row">
+            <td>${nik}</td>
+            <td>—</td>
+            ${jmlKey ? `<td>${jml || "-"}</td>` : ""}
+            ${saldoKey ? `<td>${saldo || "-"}</td>` : ""}
+            <td><i class="fas fa-times-circle"></i> Tidak ditemukan</td>
+        </tr>`;
+    });
+    document.getElementById("saldoResultBody").innerHTML = html;
+    document.getElementById("btnApplySaldo").disabled = matched.length === 0;
+    document.getElementById("saldoResultModal").classList.add("active");
+}
+function closeSaldoResult() {
+    document.getElementById("saldoResultModal").classList.remove("active");
+    __pendingSaldoUpdates = [];
+}
+function applySaldoUpdate() {
+    let updated = 0;
+    __pendingSaldoUpdates.forEach(({nik, jml, saldo, existing}) => {
+        if (jml)   existing["Jml Kartu"]   = jml;
+        if (saldo) existing["Total Saldo"] = saldo;
+        updated++;
+    });
+    saveToStorage();
+    closeSaldoResult();
+    applyFilter();
+    showToast(`✅ ${updated} data berhasil diupdate dari file saldo`, "success");
+}
+function triggerUploadSaldo() {
+    document.getElementById("uploadSaldoInput").click();
+}
+function handleUploadSaldo(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (typeof XLSX === "undefined") { showToast("Library Excel belum siap, coba lagi", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const wb = XLSX.read(ev.target.result, { type: "array" });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+            // Normalisasi header — cari kolom NIK, Jumlah Kartu, Saldo
+            const nikKey = Object.keys(rows[0] || {}).find(k => /^nik$/i.test(k.trim()));
+            const kartuKey = Object.keys(rows[0] || {}).find(k => /jumlah.*kartu|jml.*kartu/i.test(k.trim()));
+            const saldoKey = Object.keys(rows[0] || {}).find(k => /saldo/i.test(k.trim()));
+
+            if (!nikKey) { showToast("Kolom NIK tidak ditemukan di file", "error"); return; }
+
+            // Buat map NIK dari file upload
+            const saldoMap = new Map();
+            rows.forEach(row => {
+                const nik = String(row[nikKey] || "").trim().padStart(16, "0").replace(/\.0$/, "");
+                const kartu = kartuKey && row[kartuKey] !== "" ? String(row[kartuKey]).trim() : null;
+                const saldo = saldoKey && row[saldoKey] !== "" && !isNaN(parseFloat(row[saldoKey])) ? parseFloat(row[saldoKey]) : null;
+                if (nik && nik !== "0000000000000000") saldoMap.set(nik, { kartu, saldo });
+            });
+
+            let cocok = 0, diUpdate = 0, tidakAda = 0;
+            __lastSaldoMatchedNiks = new Set();
+
+            allData.forEach(row => {
+                const nik = String(row["NIK"] || "").trim();
+                if (saldoMap.has(nik)) {
+                    cocok++;
+                    __lastSaldoMatchedNiks.add(nik);
+                    const src = saldoMap.get(nik);
+                    let updated = false;
+                    // Hanya isi jika data utama kosong
+                    if (src.kartu !== null && (!row["Jml Kartu"] || row["Jml Kartu"] === "" || row["Jml Kartu"] === "0")) {
+                        row["Jml Kartu"] = src.kartu;
+                        updated = true;
+                    }
+                    if (src.saldo !== null && (!row["Total Saldo"] || row["Total Saldo"] === "" || parseFloat(row["Total Saldo"]) === 0)) {
+                        row["Total Saldo"] = src.saldo;
+                        updated = true;
+                    }
+                    if (updated) diUpdate++;
+                } else {
+                    tidakAda++;
+                }
+            });
+
+            saveToStorage();
+
+            // Tampilkan modal hasil
+            document.getElementById("uploadSaldoResultBody").innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="background:#d1fae5;border-radius:10px;padding:14px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:700;color:#065f46;">${cocok}</div>
+                            <div style="font-size:0.85rem;color:#065f46;">NIK cocok</div>
+                        </div>
+                        <div style="background:#dbeafe;border-radius:10px;padding:14px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:700;color:var(--primary);">${diUpdate}</div>
+                            <div style="font-size:0.85rem;color:var(--primary);">Data diperbarui</div>
+                        </div>
+                    </div>
+                    <p style="font-size:0.9rem;color:var(--text-secondary);margin:0;">
+                        ${tidakAda > 0 ? `${tidakAda} NIK dari file tidak ditemukan di data utama.` : "Semua NIK dari file ditemukan di data utama."}<br>
+                        Data yang sudah terisi sebelumnya <strong>tidak ditimpa</strong>.
+                    </p>
+                </div>`;
+            document.getElementById("uploadSaldoResultModal").classList.add("active");
+            applyFilter();
+        } catch (err) {
+            console.error(err);
+            showToast("Gagal membaca file Excel: " + err.message, "error");
+        }
+        e.target.value = "";
+    };
+    reader.readAsArrayBuffer(file);
+}
+function closeUploadSaldoResult() {
+    document.getElementById("uploadSaldoResultModal").classList.remove("active");
+}
+function applyUploadSaldoFilter() {
+    closeUploadSaldoResult();
+    if (__lastSaldoMatchedNiks.size === 0) return;
+    // Filter hanya tampilkan NIK yang cocok
+    filteredData = allData.filter(r => __lastSaldoMatchedNiks.has(String(r["NIK"] || "").trim()));
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+    updateStats();
+    showToast(`Menampilkan ${filteredData.length} data yang NIK-nya cocok dengan file saldo`, "success");
 }
 function triggerRestoreBackup() {
     document.getElementById("restoreFileInput").click();
@@ -1153,10 +1464,8 @@ function buildCopyText(row, index) {
     }
 
     const firstLine = (row["Alamat"] && row["Alamat"].trim()) ? row["Alamat"].trim() : `${index + 1}.`;
-    const hasEmail = !!(row["Email"] && row["Email"].trim().length > 0);
 
     return [
-        hasEmail ? "SUDAH TERDAFTAR" : null,
         firstLine,
         "",
         field("NIK", row["NIK"] || ""),
@@ -1542,40 +1851,45 @@ function getExportHeaders() {
 }
 function doExportCSV() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
-    const headers = getExportHeaders();
-    let csv = headers.join(",") + "\n";
-    filteredData.forEach(row => {
-        csv += headers.map(h => {
-            let val = row[h] || "";
-            if (val.includes(",") || val.includes('"')) { val = '"' + val.replace(/"/g, '""') + '"'; }
-            return val;
-        }).join(",") + "\n";
+    const ts = new Date().toISOString().slice(0, 10);
+    openDownloadNameModal(`data-bpjs-${ts}`, (name) => {
+        const headers = getExportHeaders();
+        let csv = headers.join(",") + "\n";
+        filteredData.forEach(row => {
+            csv += headers.map(h => {
+                let val = row[h] || "";
+                if (val.includes(",") || val.includes('"')) { val = '"' + val.replace(/"/g, '""') + '"'; }
+                return val;
+            }).join(",") + "\n";
+        });
+        downloadFile(csv, `${name}.csv`, "text/csv");
+        showToast("CSV berhasil diexport!", "success");
     });
-    downloadFile(csv, "filtered_bpjs_data.csv", "text/csv");
-    showToast("CSV berhasil diexport!", "success");
 }
 function doExportExcel() {
     if (filteredData.length === 0) { showToast("Tidak ada data untuk diexport", "error"); return; }
     if (typeof XLSX === "undefined") { showToast("Gagal memuat library Excel, cek koneksi internet", "error"); return; }
-    const headers = getExportHeaders();
-    const aoa = [headers];
-    filteredData.forEach(row => {
-        aoa.push(headers.map(h => (row[h] !== undefined && row[h] !== null) ? String(row[h]) : ""));
-    });
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    // Paksa semua sel jadi teks agar Excel tidak mengubah format tanggal (mis. Tgl Lahir tetap pakai strip "-")
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let R = range.s.r; R <= range.e.r; R++) {
-        for (let C = range.s.c; C <= range.e.c; C++) {
-            const addr = XLSX.utils.encode_cell({ r: R, c: C });
-            if (ws[addr]) { ws[addr].t = 's'; ws[addr].z = '@'; }
+    const ts = new Date().toISOString().slice(0, 10);
+    openDownloadNameModal(`data-bpjs-${ts}`, (name) => {
+        const headers = getExportHeaders();
+        const aoa = [headers];
+        filteredData.forEach(row => {
+            aoa.push(headers.map(h => (row[h] !== undefined && row[h] !== null) ? String(row[h]) : ""));
+        });
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                if (ws[addr]) { ws[addr].t = 's'; ws[addr].z = '@'; }
+            }
         }
-    }
-    ws['!cols'] = headers.map(() => ({ wch: 20 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BPJS Data");
-    XLSX.writeFile(wb, "filtered_bpjs_data.xlsx");
-    showToast("Excel (.xlsx) berhasil diexport!", "success");
+        ws['!cols'] = headers.map(() => ({ wch: 20 }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "BPJS Data");
+        XLSX.writeFile(wb, `${name}.xlsx`);
+        showToast("Excel (.xlsx) berhasil diexport!", "success");
+    });
 }
 function downloadFile(content, filename, type) {
     const blob = new Blob([content], { type });
