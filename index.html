@@ -780,10 +780,16 @@ function closeSaldoResult() {
 function applySaldoUpdate() {
     let updated = 0;
     __pendingSaldoUpdates.forEach(({nik, jml, saldo, kpj, existing}) => {
-        if (jml)   existing["Jml Kartu"]    = jml;
-        if (saldo) existing["Total Saldo"]  = saldo;
-        if (kpj && !(existing["List KPJ (PU)"] && existing["List KPJ (PU)"].trim())) {
-            existing["List KPJ (PU)"] = kpj; // isi hanya jika KPJ masih kosong
+        const existingJml = (existing["Jml Kartu"] || "").toString().trim();
+        const existingSaldo = (existing["Total Saldo"] || "").toString().trim();
+        const jmlEmpty = !existingJml || existingJml === "-" || existingJml === "0";
+        const saldoEmpty = !existingSaldo || existingSaldo === "-" || existingSaldo === "0" || parseFloat(existingSaldo) === 0;
+        if (jml && jmlEmpty)     existing["Jml Kartu"]   = jml;
+        if (saldo && saldoEmpty) existing["Total Saldo"] = saldo;
+        const existingKpj = (existing["List KPJ (PU)"] || "").trim();
+        const kpjEmpty = !existingKpj || existingKpj === "-" || existingKpj === "0";
+        if (kpj && kpjEmpty) {
+            existing["List KPJ (PU)"] = kpj;
         }
         updated++;
     });
