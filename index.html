@@ -121,6 +121,8 @@
             display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
         }
         .btn-copy:hover { background: var(--primary); color: white; }
+        .btn-copy.copied { background: var(--success); color: #fff; }
+        .btn-copy.copied:hover { background: #059669; }
         .table-container {
             background: var(--card); border-radius: 14px; box-shadow: var(--shadow);
             border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px;
@@ -452,6 +454,7 @@ let copyBuffer = '';
 let newlyUploadedNiks = new Set();
 let selectedNiks = new Set();
 let copiedNiks = new Set();
+let copiedRowNiks = new Set();
 const STORAGE_KEY = 'bpjs_filtered_data_v6';
 const defaultData = [
     {"NIK":"5202070107970423","Nama":"JUIS MAYADI","Tgl Lahir":"15-09-1996","KPJ Input":"","Status Akun":"Terdaftar","Email":"heidyglendenning9@gmail.com","Password":"Ciamis12@","Status Regist":"OK","List KPJ (PU)":"19052991767","Jml Kartu":1,"Status Added":"1/1","Total Saldo":"Rp 736.762,00","Iuran Terakhir":"01 NOVEMBER 2019","Status Pengkinian":"Belum Pengkinian Data","Pesan Pengkinian":"Layak (JHTA000)","Pesan Klaim":"Pengajuan klaim Anda saat ini tidak dapat dilanjutkan. Segera lakukan pengkinian data. Informasi lebih lanjut, silahkan hubungi Call Center 175 (JHTA001)","Keterangan":"Klaim dapat melalui JMO"},
@@ -787,6 +790,14 @@ function closeSaldoResult() {
     document.getElementById("saldoResultModal").classList.remove("active");
     __pendingSaldoUpdates = [];
 }
+function isValidKpjText(text) {
+    const t = (text || "").trim();
+    if (!t || t === "-" || t === "0") return false;
+    const lines = t.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return false;
+    // KPJ valid = setiap baris cuma berisi angka (biasanya 11 digit). Kalau ada huruf/teks error, dianggap tidak valid.
+    return lines.every(l => /^\d+$/.test(l));
+}
 function applySaldoUpdate() {
     let updated = 0;
     __pendingSaldoUpdates.forEach(({nik, jml, saldo, kpj, existing}) => {
@@ -797,8 +808,8 @@ function applySaldoUpdate() {
         if (jml && jmlEmpty)     existing["Jml Kartu"]   = jml;
         if (saldo && saldoEmpty) existing["Total Saldo"] = saldo;
         const existingKpj = (existing["List KPJ (PU)"] || "").trim();
-        const kpjEmpty = !existingKpj || existingKpj === "-" || existingKpj === "0";
-        if (kpj && kpjEmpty) {
+        const kpjInvalid = !isValidKpjText(existingKpj); // kosong / "-" / "0" / teks error / bukan angka
+        if (kpj && kpjInvalid) {
             existing["List KPJ (PU)"] = kpj;
         }
         updated++;
@@ -982,7 +993,7 @@ function renderTable() {
             else if (col.format === "status") html += `<td style="${style}"><span class="status-pill warning"><i class="fas fa-exclamation-circle"></i> ${val}</span></td>`;
             else html += `<td style="${style}">${val}</td>`;
         });
-        html += `<td onclick="event.stopPropagation()"><button class="btn-copy" onclick="quickCopy(${globalIdx})" title="Salin format"><i class="fas fa-copy"></i> Salin</button></td>`;
+        html += `<td onclick="event.stopPropagation()"><button class="btn-copy ${copiedRowNiks.has(nikVal) ? 'copied' : ''}" onclick="quickCopy(${globalIdx}, this)" title="Salin format">${copiedRowNiks.has(nikVal) ? '<i class="fas fa-check"></i> Tersalin' : '<i class="fas fa-copy"></i> Salin'}</button></td>`;
         html += '</tr>';
         html += `<tr class="detail-row" id="detail-${globalIdx}"><td colspan="${visibleCols.length + 3}"><div class="detail-content">` +
             `<div class="detail-item" style="grid-column:1/-1;">
@@ -1398,20 +1409,25 @@ function buildCopyText(row, index) {
     );
     return lines.filter(line => line !== null).join("\n");
 }
-function quickCopy(idx) {
+function quickCopy(idx, btnEl) {
     const row = filteredData[idx];
     if (!row) return;
     const text = buildCopyText(row, idx);
-    navigator.clipboard.writeText(text).then(() => {
-        showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
-    }).catch(() => {
+    const markCopied = () => {
+        if (row["NIK"]) copiedRowNiks.add(row["NIK"]);
+        if (btnEl) {
+            btnEl.classList.add("copied");
+            btnEl.innerHTML = '<i class="fas fa-check"></i> Tersalin';
+        }
+    };
+    navigator.clipboard.writeText(text).then(markCopied).catch(() => {
         const ta = document.createElement("textarea");
         ta.value = text;
         document.body.appendChild(ta);
         ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
-        showToast(`✅ ${row["Nama"] || "Data"} — disalin!`, "success");
+        markCopied();
     });
 }
 function copyNik(e, nik) {
@@ -1466,6 +1482,7 @@ function cleanupSelection() {
     const validNiks = new Set(allData.map(r => r["NIK"]));
     if (selectedNiks.size > 0) selectedNiks.forEach(n => { if (!validNiks.has(n)) selectedNiks.delete(n); });
     if (copiedNiks.size > 0) copiedNiks.forEach(n => { if (!validNiks.has(n)) copiedNiks.delete(n); });
+    if (copiedRowNiks.size > 0) copiedRowNiks.forEach(n => { if (!validNiks.has(n)) copiedRowNiks.delete(n); });
 }
 function updateSelectedUI() {
     const delBtn = document.getElementById("btnDeleteSelected");
