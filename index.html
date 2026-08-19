@@ -1037,6 +1037,18 @@ function updateAlamat(globalIdx, value) {
     if (!row) return;
     row["Alamat"] = value.trim();
     saveToStorage();
+    updateAlamatBadgeUI(globalIdx, row);
+}
+function updateAlamatBadgeUI(globalIdx, row) {
+    const hasAlamat = !!(row["Alamat"] && row["Alamat"].trim());
+    const mainRow = document.querySelector(`tr[data-index="${globalIdx}"]`);
+    if (!mainRow) return;
+    mainRow.classList.toggle("has-alamat", hasAlamat);
+    const numCell = mainRow.children[1]; // td kedua = nomor urut, tempat badge alamat
+    if (numCell) {
+        const badgeHtml = hasAlamat ? `<span class="alamat-badge" title="Alamat: ${(row["Alamat"] || "").replace(/"/g, "&quot;")}"><i class="fas fa-map-marker-alt"></i></span>` : "";
+        numCell.innerHTML = `${globalIdx + 1}${badgeHtml}`;
+    }
 }
 function renderDetailItem(label, value) {
     return `<div class="detail-item"><div class="label">${label}</div><div class="value">${value || '-'}</div></div>`;
