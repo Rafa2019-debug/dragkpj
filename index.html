@@ -1389,8 +1389,8 @@ function buildCopyText(row, index) {
     const kpjRaw = (row["List KPJ (PU)"] || "").replace(/\\n/g, "\n");
     const kpjList = kpjRaw.split("\n").map(k => k.trim()).filter(k => k.length > 0);
     const iuranDate = convertIuranToDate(row["Iuran Terakhir"] || "");
-    const jk = detectGenderFromNik(row["NIK"]);
-    const field = (label, value) => `${label.padEnd(9, " ")}: ${value}`;
+    const jkCode = detectGenderFromNik(row["NIK"]);
+    const jkFull = jkCode === "P" ? "WANITA" : "PRIA";
     const kpjYear = getKpjYearLabel(kpjList);
 
     let tunggalSensor;
@@ -1405,29 +1405,30 @@ function buildCopyText(row, index) {
         const sensorParts = kpjList.slice(1).map(k => k.substring(0, 2) + "**");
         tunggalSensor = "SENSOR " + sensorParts.join(" ") + " JMO";
     }
+    const kpjLine = kpjYear ? `KPJ ${kpjYear} ${tunggalSensor}` : tunggalSensor;
 
-    const firstLine = (row["Alamat"] && row["Alamat"].trim()) ? row["Alamat"].trim() : `${index + 1}.`;
+    const firstLineRaw = (row["Alamat"] && row["Alamat"].trim()) ? row["Alamat"].trim() : `${index + 1}`;
+    const firstLine = `*${firstLineRaw}*`;
 
     const lines = [
         firstLine,
         "",
-        field("NIK", row["NIK"] || ""),
-        field("JK", jk),
-        field("LAHIR", row["Tgl Lahir"] || ""),
+        row["NIK"] || "",
+        jkFull,
+        row["Tgl Lahir"] || "",
         "",
-        kpjYear ? `KPJ ${kpjYear}` : null,
-        tunggalSensor,
-        field("KERJA", "isimanual"),
-        field("SALDO", saldo)
+        kpjLine,
+        saldo
     ];
-    if (showNAInCopy) lines.push(field("N/A", iuranDate));
+    if (showNAInCopy) lines.push(iuranDate);
     lines.push(
-        field("KPJ", kpjRaw),
-        field("NAMA", row["Nama"] || ""),
-        field("EMAIL", row["Email"] || ""),
-        field("PW", row["Password"] || "")
+        "",
+        row["Email"] || "",
+        row["Password"] || "",
+        kpjRaw,
+        row["Nama"] || ""
     );
-    return lines.filter(line => line !== null).join("\n");
+    return lines.join("\n");
 }
 function quickCopy(idx, btnEl) {
     const row = filteredData[idx];
