@@ -164,6 +164,13 @@
         .btn-copy-icon.copied:hover { background: #059669; }
         input.row-check, input#selectAllCheckbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
         tr.row-selected td { background: rgba(37,99,235,0.09) !important; }
+        tr.has-alamat td { background: rgba(16,185,129,0.06); }
+        tr.has-alamat.row-selected td { background: rgba(37,99,235,0.12); }
+        .alamat-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 50%; background: var(--success);
+            color: #fff; font-size: 0.6rem; margin-left: 6px; flex-shrink: 0;
+        }
         .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
         #saldoResultBody tr td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
         #saldoResultBody tr.match-row td { background: #f0fdf4; }
@@ -977,9 +984,10 @@ function renderTable() {
         const isNew = newlyUploadedNiks.has(row["NIK"]);
         const nikVal = row["NIK"] || "";
         const isSelected = selectedNiks.has(nikVal);
-        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''} ${isSelected ? 'row-selected' : ''}" onclick="toggleDetailRow(${globalIdx})" style="cursor:pointer;">`;
+        const hasAlamat = !!(row["Alamat"] && row["Alamat"].trim());
+        html += `<tr data-index="${globalIdx}" class="${isNew ? 'row-new' : ''} ${isSelected ? 'row-selected' : ''} ${hasAlamat ? 'has-alamat' : ''}" onclick="toggleDetailRow(${globalIdx})" style="cursor:pointer;">`;
         html += `<td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${nikVal}', this)"></td>`;
-        html += `<td style="color:var(--text-secondary);font-size:0.85rem">${globalIdx + 1}</td>`;
+        html += `<td style="color:var(--text-secondary);font-size:0.85rem;white-space:nowrap;">${globalIdx + 1}${hasAlamat ? `<span class="alamat-badge" title="Alamat: ${(row["Alamat"]||"").replace(/"/g,"&quot;")}"><i class="fas fa-map-marker-alt"></i></span>` : ""}</td>`;
         colConfig.forEach(col => {
             if (!visibleCols.includes(col.key)) return;
             let val = row[col.key] || "-";
