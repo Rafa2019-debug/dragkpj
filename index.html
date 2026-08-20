@@ -805,13 +805,25 @@ function isValidKpjText(text) {
     // KPJ valid = setiap baris cuma berisi angka (biasanya 11 digit). Kalau ada huruf/teks error, dianggap tidak valid.
     return lines.every(l => /^\d+$/.test(l));
 }
+function isZeroOrEmptyAmount(raw) {
+    const s = (raw || "").toString().replace(/Rp/gi, "").trim();
+    if (!s || s === "-") return true;
+    let cleaned = s;
+    if (/,\d{1,2}$/.test(cleaned)) {
+        // Format Indonesia: titik ribuan, koma desimal -> hilangkan titik, koma jadi titik
+        cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+    } else {
+        cleaned = cleaned.replace(/[^\d.]/g, "");
+    }
+    const num = parseFloat(cleaned);
+    return isNaN(num) || num === 0;
+}
 function applySaldoUpdate() {
     let updated = 0;
     __pendingSaldoUpdates.forEach(({nik, jml, saldo, kpj, existing}) => {
         const existingJml = (existing["Jml Kartu"] || "").toString().trim();
-        const existingSaldo = (existing["Total Saldo"] || "").toString().trim();
         const jmlEmpty = !existingJml || existingJml === "-" || existingJml === "0";
-        const saldoEmpty = !existingSaldo || existingSaldo === "-" || existingSaldo === "0" || parseFloat(existingSaldo) === 0;
+        const saldoEmpty = isZeroOrEmptyAmount(existing["Total Saldo"]);
         if (jml && jmlEmpty)     existing["Jml Kartu"]   = jml;
         if (saldo && saldoEmpty) existing["Total Saldo"] = saldo;
         const existingKpj = (existing["List KPJ (PU)"] || "").trim();
