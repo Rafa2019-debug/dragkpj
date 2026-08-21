@@ -176,6 +176,10 @@
         #saldoResultBody tr.match-row td { background: #f0fdf4; }
         #saldoResultBody tr.no-match-row td { background: #fef2f2; color: #991b1b; }
         #saldoResultHead th { padding: 8px 12px; text-align:left; font-size:0.8rem; color:var(--text-secondary); border-bottom: 2px solid var(--border); }
+        #iuranResultBody tr td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        #iuranResultBody tr.match-row td { background: #f0fdf4; }
+        #iuranResultBody tr.no-match-row td { background: #fef2f2; color: #991b1b; }
+        #iuranResultHead th { padding: 8px 12px; text-align:left; font-size:0.8rem; color:var(--text-secondary); border-bottom: 2px solid var(--border); }
         .saldo { font-weight: 700; color: var(--success); }
         .status-pill {
             display: inline-flex; align-items: center; gap: 6px;
@@ -350,6 +354,8 @@
             <input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none" onchange="handleRestoreBackup(event)">
             <button class="btn btn-outline" onclick="triggerUploadSaldo()" style="border-color:var(--success);color:var(--success);"><i class="fas fa-file-invoice-dollar"></i> Upload Saldo</button>
             <input type="file" id="saldoFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleUploadSaldo(event)">
+            <button class="btn btn-outline" onclick="triggerUploadIuran()" style="border-color:var(--warning);color:var(--warning);"><i class="fas fa-calendar-check"></i> Upload Iuran</button>
+            <input type="file" id="iuranFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleUploadIuran(event)">
             <button class="btn btn-outline" id="btnToggleNA" onclick="toggleShowNA()"><i class="fas fa-eye"></i> N/A: <span id="naStatusLabel">Tampil</span></button>
             <div class="column-toggle" id="columnToggleWrap">
                 <button class="btn btn-outline" onclick="toggleColumnMenu(event)"><i class="fas fa-columns"></i> Kolom</button>
@@ -410,6 +416,25 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeSaldoResult()">Tutup</button>
                 <button class="btn btn-primary" onclick="applySaldoUpdate()" id="btnApplySaldo"><i class="fas fa-check"></i> Terapkan Update</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="iuranResultModal" style="z-index:3001;">
+        <div class="modal-box" style="max-width:780px;max-height:85vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-check"></i> Hasil Upload Iuran Terakhir — <span id="iuranResultTitle"></span></h3>
+                <button class="modal-close" onclick="closeIuranResult()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border);font-size:0.9rem;" id="iuranResultSummary"></div>
+            <div style="overflow-y:auto;flex:1;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead id="iuranResultHead" style="position:sticky;top:0;background:var(--card);z-index:1;"></thead>
+                    <tbody id="iuranResultBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeIuranResult()">Tutup</button>
+                <button class="btn btn-primary" onclick="applyIuranUpdate()" id="btnApplyIuran"><i class="fas fa-check"></i> Terapkan Update Iuran</button>
             </div>
         </div>
     </div>
@@ -838,6 +863,247 @@ function applySaldoUpdate() {
     applyFilter();
     showToast(`✅ ${updated} data berhasil diupdate dari file saldo`, "success");
 }
+// ==== Upload Iuran Terakhir: cocokkan NIK lalu preview sebelum diterapkan ====
+let __pendingIuranUpdates = [];
+function triggerUploadIuran() {
+    if (allData.length === 0) {
+        showToast("Belum ada data peserta. Upload data utama terlebih dahulu", "error");
+        return;
+    }
+    document.getElementById("iuranFileInput").click();
+}
+function handleUploadIuran(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    const reader = new FileReader();
+    if (ext === "csv") {
+        reader.onload = (ev) => parseIuranCSV(ev.target.result, file.name);
+        reader.readAsText(file);
+    } else if (ext === "xlsx" || ext === "xls") {
+        reader.onload = (ev) => parseIuranXLSX(ev.target.result, file.name);
+        reader.readAsArrayBuffer(file);
+    } else {
+        showToast("Format file Iuran harus XLSX, XLS, atau CSV", "error");
+    }
+    e.target.value = "";
+}
+function detectCsvDelimiter(line) {
+    const comma = (line.match(/,/g) || []).length;
+    const semi = (line.match(/;/g) || []).length;
+    return semi > comma ? ";" : ",";
+}
+function parseSimpleDelimited(text) {
+    const normalized = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalized.split("\n").filter(line => line.trim() !== "");
+    if (lines.length < 2) return [];
+    const delimiter = detectCsvDelimiter(lines[0]);
+    const parseLine = (line) => {
+        const out = [];
+        let field = "";
+        let quoted = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (quoted && line[i + 1] === '"') { field += '"'; i++; }
+                else quoted = !quoted;
+            } else if (ch === delimiter && !quoted) {
+                out.push(field.trim()); field = "";
+            } else field += ch;
+        }
+        out.push(field.trim());
+        return out;
+    };
+    const headers = parseLine(lines[0]).map(h => h.replace(/^"|"$/g, "").trim());
+    return lines.slice(1).map(line => {
+        const cols = parseLine(line);
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = cols[i] !== undefined ? cols[i] : "");
+        return obj;
+    });
+}
+function parseIuranCSV(text, filename) {
+    const rows = parseSimpleDelimited(text);
+    if (rows.length === 0) {
+        showToast("File Iuran CSV kosong atau tidak valid", "error");
+        return;
+    }
+    processIuranRows(rows, filename);
+}
+function parseIuranXLSX(arrayBuffer, filename) {
+    if (typeof XLSX === "undefined") {
+        showToast("Library Excel belum siap, coba lagi sebentar", "error");
+        return;
+    }
+    try {
+        const wb = XLSX.read(arrayBuffer, { type: "array", cellText: true, cellDates: false });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // raw:false menjaga NIK/format tanggal mengikuti teks yang terlihat di Excel.
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
+        processIuranRows(rows, filename);
+    } catch (err) {
+        showToast("Gagal membaca file Iuran: " + err.message, "error");
+    }
+}
+function normalizeNikForMatch(value) {
+    let s = String(value === null || value === undefined ? "" : value).trim();
+    if (!s) return "";
+    // Buang .0 yang kadang muncul dari file angka, serta spasi/pemisah non-digit.
+    s = s.replace(/\.0+$/, "").replace(/[^0-9]/g, "");
+    return s;
+}
+function normalizeIuranValue(raw) {
+    if (raw === null || raw === undefined || raw === "") return "";
+    let s = String(raw).trim().replace(/\s+/g, " ");
+    if (!s) return "";
+    const months = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+    const aliases = {
+        JAN:"JANUARI", JANUARY:"JANUARI", FEB:"FEBRUARI", FEBRUARY:"FEBRUARI",
+        MAR:"MARET", MARCH:"MARET", APR:"APRIL", APRIL:"APRIL", MAY:"MEI", MEI:"MEI",
+        JUN:"JUNI", JUNE:"JUNI", JUL:"JULI", JULY:"JULI", AUG:"AGUSTUS", AUGUST:"AGUSTUS", AGU:"AGUSTUS",
+        SEP:"SEPTEMBER", SEPT:"SEPTEMBER", SEPTEMBER:"SEPTEMBER", OCT:"OKTOBER", OCTOBER:"OKTOBER", OKT:"OKTOBER",
+        NOV:"NOVEMBER", NOVEMBER:"NOVEMBER", DEC:"DESEMBER", DECEMBER:"DESEMBER", DES:"DESEMBER"
+    };
+    let up = s.toUpperCase().replace(/,/g, "");
+
+    // Format teks: 01 FEBRUARI 2020 / 1 FEB 2020 / 01 February 2020
+    let m = up.match(/^(\d{1,2})\s+([A-Z]+)\s+(\d{4})$/);
+    if (m) {
+        const month = aliases[m[2]] || m[2];
+        if (months.includes(month)) return `${m[1].padStart(2,"0")} ${month} ${m[3]}`;
+    }
+
+    // Format angka Indonesia: DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
+    m = up.match(/^(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{4})$/);
+    if (m) {
+        const d = Math.max(1, Math.min(31, parseInt(m[1], 10)));
+        const mo = parseInt(m[2], 10);
+        if (mo >= 1 && mo <= 12) return `${String(d).padStart(2,"0")} ${months[mo - 1]} ${m[3]}`;
+    }
+
+    // Format ISO: YYYY-MM-DD
+    m = up.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) {
+        const mo = parseInt(m[2], 10);
+        if (mo >= 1 && mo <= 12) return `${m[3].padStart(2,"0")} ${months[mo - 1]} ${m[1]}`;
+    }
+
+    // Jika format lain, simpan teksnya apa adanya agar data tidak hilang.
+    return up;
+}
+function escapeIuranHtml(value) {
+    return String(value === null || value === undefined ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function processIuranRows(rows, filename) {
+    const firstRow = rows[0] || {};
+    const keys = Object.keys(firstRow);
+    if (keys.length === 0) {
+        showToast("File Iuran tidak mempunyai kolom", "error");
+        return;
+    }
+    const compact = (k) => String(k || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const nikKey = keys.find(k => compact(k) === "NIK") || keys.find(k => /NIK/i.test(k)) || keys[0];
+    const iuranKey =
+        keys.find(k => /IURAN.*TERAKHIR/i.test(k)) ||
+        keys.find(k => /TGL.*AKHIR.*MASA.*TUNGGU/i.test(k)) ||
+        keys.find(k => /TANGGAL.*AKHIR.*MASA.*TUNGGU/i.test(k)) ||
+        keys.find(k => /MASA.*TUNGGU/i.test(k)) ||
+        keys.find(k => /IURAN/i.test(k)) ||
+        keys.find(k => k !== nikKey);
+
+    if (!nikKey || !iuranKey) {
+        showToast("Kolom NIK atau tanggal Iuran tidak ditemukan", "error");
+        return;
+    }
+
+    const dataMap = new Map();
+    allData.forEach(row => {
+        const n = normalizeNikForMatch(row["NIK"]);
+        if (n) dataMap.set(n, row);
+    });
+
+    const matchedMap = new Map();
+    const unmatchedMap = new Map();
+    let invalid = 0;
+
+    rows.forEach(r => {
+        const nik = normalizeNikForMatch(r[nikKey]);
+        const iuran = normalizeIuranValue(r[iuranKey]);
+        if (!nik) return;
+        if (!iuran) { invalid++; return; }
+        const existing = dataMap.get(nik);
+        if (existing) {
+            matchedMap.set(nik, { nik, iuran, oldIuran: String(existing["Iuran Terakhir"] || "").trim(), existing });
+            unmatchedMap.delete(nik);
+        } else {
+            unmatchedMap.set(nik, { nik, iuran });
+        }
+    });
+
+    const matched = Array.from(matchedMap.values());
+    const unmatched = Array.from(unmatchedMap.values());
+    __pendingIuranUpdates = matched;
+    showIuranResult(matched, unmatched, invalid, filename, nikKey, iuranKey);
+}
+function showIuranResult(matched, unmatched, invalid, filename, nikKey, iuranKey) {
+    document.getElementById("iuranResultTitle").textContent = filename;
+    document.getElementById("iuranResultSummary").innerHTML =
+        `<span style="color:var(--success);font-weight:600;">✅ ${matched.length} NIK cocok</span> &nbsp;|&nbsp; ` +
+        `<span style="color:var(--danger);font-weight:600;">❌ ${unmatched.length} NIK tidak ditemukan</span>` +
+        (invalid ? ` &nbsp;|&nbsp; <span style="color:var(--warning);font-weight:600;">⚠️ ${invalid} tanggal kosong</span>` : "") +
+        ` &nbsp;|&nbsp; Kolom: <b>${escapeIuranHtml(nikKey)}</b> · <b>${escapeIuranHtml(iuranKey)}</b>`;
+
+    document.getElementById("iuranResultHead").innerHTML =
+        `<tr><th>NIK</th><th>Nama</th><th>Iuran Lama</th><th>Iuran Baru</th><th>Status</th></tr>`;
+
+    let html = "";
+    matched.forEach(({nik, iuran, oldIuran, existing}) => {
+        const same = normalizeIuranValue(oldIuran) === iuran;
+        html += `<tr class="match-row">
+            <td>${escapeIuranHtml(nik)}</td>
+            <td>${escapeIuranHtml(existing["Nama"] || "-")}</td>
+            <td>${escapeIuranHtml(oldIuran || "-")}</td>
+            <td><b>${escapeIuranHtml(iuran)}</b></td>
+            <td style="color:var(--success)"><i class="fas fa-check-circle"></i> ${same ? "Sudah sama" : "Siap update"}</td>
+        </tr>`;
+    });
+    unmatched.forEach(({nik, iuran}) => {
+        html += `<tr class="no-match-row">
+            <td>${escapeIuranHtml(nik)}</td>
+            <td>—</td><td>—</td>
+            <td>${escapeIuranHtml(iuran)}</td>
+            <td><i class="fas fa-times-circle"></i> Tidak ditemukan</td>
+        </tr>`;
+    });
+    document.getElementById("iuranResultBody").innerHTML = html;
+    document.getElementById("btnApplyIuran").disabled = matched.length === 0;
+    document.getElementById("iuranResultModal").classList.add("active");
+}
+function closeIuranResult() {
+    document.getElementById("iuranResultModal").classList.remove("active");
+    __pendingIuranUpdates = [];
+}
+function applyIuranUpdate() {
+    let changed = 0;
+    let same = 0;
+    __pendingIuranUpdates.forEach(({iuran, existing}) => {
+        const oldValue = normalizeIuranValue(existing["Iuran Terakhir"] || "");
+        if (oldValue !== iuran) {
+            existing["Iuran Terakhir"] = iuran;
+            changed++;
+        } else {
+            same++;
+        }
+    });
+    saveToStorage();
+    closeIuranResult();
+    applyFilter();
+    updateStats();
+    showToast(`✅ Iuran Terakhir selesai: ${changed} diperbarui${same ? `, ${same} sudah sama` : ""}`, "success");
+}
+
 function triggerRestoreBackup() {
     document.getElementById("restoreFileInput").click();
 }
